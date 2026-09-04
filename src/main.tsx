@@ -1,7 +1,11 @@
 import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
 import { RequireAuth } from "@/components/RequireAuth";
-import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
+const VlyToolbar = lazy(() =>
+  import("../vly-toolbar-readonly.tsx").then(({ VlyToolbar }) => ({
+    default: VlyToolbar,
+  })),
+);
 import { InstrumentationProvider } from "@/instrumentation.tsx";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
@@ -28,6 +32,8 @@ function RouteLoading() {
   );
 }
 
+const isVlyHost =
+  typeof window !== "undefined" && window.location.hostname.endsWith(".vly.sh");
 const convexUrl = import.meta.env.VITE_CONVEX_URL;
 const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
 
@@ -128,7 +134,11 @@ function AppRoutes() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <VlyToolbar />
+    {isVlyHost && (
+      <Suspense fallback={null}>
+        <VlyToolbar />
+      </Suspense>
+    )}
     <InstrumentationProvider>
       <HashRouter>
         <RouteSyncer />
