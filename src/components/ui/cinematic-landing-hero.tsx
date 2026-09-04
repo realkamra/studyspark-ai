@@ -92,45 +92,49 @@ export function CinematicHero({
   const containerRef = useRef<HTMLDivElement>(null);
   const mainCardRef = useRef<HTMLDivElement>(null);
   const mockupRef = useRef<HTMLDivElement>(null);
-  const requestRef = useRef<number>(0);
-
   useEffect(() => {
+    const card = mainCardRef.current;
+    const mockup = mockupRef.current;
+    if (!card || !mockup) return;
+
+    // quickTo reuses a single tween instead of creating a new tween for every mouse event.
+    const rotateYTo = gsap.quickTo(mockup, "rotationY", { duration: 0.8, ease: "power3.out" });
+    const rotateXTo = gsap.quickTo(mockup, "rotationX", { duration: 0.8, ease: "power3.out" });
+
     const handleMouseMove = (event: MouseEvent) => {
       if (window.scrollY > window.innerHeight * 2) return;
-      cancelAnimationFrame(requestRef.current);
-      requestRef.current = requestAnimationFrame(() => {
-        if (!mainCardRef.current || !mockupRef.current) return;
-        const rect = mainCardRef.current.getBoundingClientRect();
-        mainCardRef.current.style.setProperty("--mouse-x", `${event.clientX - rect.left}px`);
-        mainCardRef.current.style.setProperty("--mouse-y", `${event.clientY - rect.top}px`);
-        const xVal = (event.clientX / window.innerWidth - 0.5) * 2;
-        const yVal = (event.clientY / window.innerHeight - 0.5) * 2;
-        gsap.to(mockupRef.current, { rotationY: xVal * 12, rotationX: -yVal * 12, ease: "power3.out", duration: 1.2, overwrite: true });
-      });
+      const rect = card.getBoundingClientRect();
+      card.style.setProperty("--mouse-x", `${event.clientX - rect.left}px`);
+      card.style.setProperty("--mouse-y", `${event.clientY - rect.top}px`);
+      const xVal = (event.clientX / window.innerWidth - 0.5) * 2;
+      const yVal = (event.clientY / window.innerHeight - 0.5) * 2;
+      rotateYTo(xVal * 12);
+      rotateXTo(-yVal * 12);
     };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => { window.removeEventListener("mousemove", handleMouseMove); cancelAnimationFrame(requestRef.current); };
+
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
   useEffect(() => {
     const isMobile = window.innerWidth < 768;
     const context = gsap.context(() => {
-      gsap.set(".text-track", { autoAlpha: 0, y: 60, scale: 0.85, filter: "blur(20px)", rotationX: -20 });
+      gsap.set(".text-track", { autoAlpha: 0, y: 60, scale: 0.85, rotationX: -20 });
       gsap.set(".text-days", { autoAlpha: 1, clipPath: "inset(0 100% 0 0)" });
       gsap.set(".main-card", { y: window.innerHeight + 200, autoAlpha: 1 });
       gsap.set([".card-left-text", ".card-right-text", ".mockup-scroll-wrapper", ".floating-badge", ".phone-widget"], { autoAlpha: 0 });
-      gsap.set(".cta-wrapper", { autoAlpha: 0, scale: 0.8, filter: "blur(30px)" });
+      gsap.set(".cta-wrapper", { autoAlpha: 0, scale: 0.8 });
 
       const introTimeline = gsap.timeline({ delay: 0.3 });
       introTimeline
-        .to(".text-track", { duration: 1.8, autoAlpha: 1, y: 0, scale: 1, filter: "blur(0px)", rotationX: 0, ease: "expo.out" })
+        .to(".text-track", { duration: 1.8, autoAlpha: 1, y: 0, scale: 1, rotationX: 0, ease: "expo.out" })
         .to(".text-days", { duration: 1.4, clipPath: "inset(0 0% 0 0)", ease: "power4.inOut" }, "-=1");
 
       const scrollTimeline = gsap.timeline({
-        scrollTrigger: { trigger: containerRef.current, start: "top top", end: "+=7000", pin: true, scrub: 1, anticipatePin: 1 },
+        scrollTrigger: { trigger: containerRef.current, start: "top top", end: "+=2200", pin: true, scrub: 0.6, anticipatePin: 1 },
       });
       scrollTimeline
-        .to([".hero-text-wrapper", ".bg-grid-theme"], { scale: 1.15, filter: "blur(20px)", opacity: 0.2, ease: "power2.inOut", duration: 2 }, 0)
+        .to([".hero-text-wrapper", ".bg-grid-theme"], { scale: 1.08, opacity: 0.2, ease: "power2.inOut", duration: 2 }, 0)
         .to(".main-card", { y: 0, ease: "power3.inOut", duration: 2 }, 0)
         .to(".main-card", { width: "100%", height: "100%", borderRadius: "0px", ease: "power3.inOut", duration: 1.5 })
         .fromTo(".mockup-scroll-wrapper", { y: 300, z: -500, rotationX: 50, rotationY: -30, autoAlpha: 0, scale: 0.6 }, { y: 0, z: 0, rotationX: 0, rotationY: 0, autoAlpha: 1, scale: 1, ease: "expo.out", duration: 2.5 }, "-=0.8")
@@ -146,7 +150,7 @@ export function CinematicHero({
         .to({}, { duration: 1.5 })
         .to([".mockup-scroll-wrapper", ".floating-badge", ".card-left-text", ".card-right-text"], { scale: 0.9, y: -40, z: -200, autoAlpha: 0, ease: "power3.in", duration: 1.2, stagger: 0.05 })
         .to(".main-card", { width: isMobile ? "92vw" : "85vw", height: isMobile ? "92vh" : "85vh", borderRadius: isMobile ? "32px" : "40px", ease: "expo.inOut", duration: 1.8 }, "pullback")
-        .to(".cta-wrapper", { scale: 1, filter: "blur(0px)", ease: "expo.inOut", duration: 1.8 }, "pullback")
+        .to(".cta-wrapper", { scale: 1, ease: "expo.inOut", duration: 1.8 }, "pullback")
         .to(".main-card", { y: -window.innerHeight - 300, ease: "power3.in", duration: 1.5 });
     }, containerRef);
     return () => context.revert();
