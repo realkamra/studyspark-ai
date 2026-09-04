@@ -21,6 +21,17 @@ Use bun for the package manager.
 
 This project is set up already and running on a cloud environment, as well as a convex development in the sandbox.
 
+## Publish a preview on GitHub Pages
+
+A GitHub Actions workflow is included at `.github/workflows/deploy-pages.yml`. After pushing this repository to GitHub:
+
+1. Open **Settings → Pages** in the repository.
+2. Set **Source** to **GitHub Actions**.
+3. Push to the `main` branch, or run the **Deploy to GitHub Pages** workflow from the **Actions** tab.
+4. Open the URL shown in the workflow deployment summary, usually `https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/`.
+
+The app uses hash-based routes so pages such as `#/library` work when hosted on GitHub Pages. The public landing page and library preview work without secrets. To enable Convex authentication on the deployed preview, add a repository variable named `VITE_CONVEX_URL` under **Settings → Secrets and variables → Actions → Variables**.
+
 ## Environment Variables
 
 The project is set up with project specific CONVEX_DEPLOYMENT and VITE_CONVEX_URL environment variables on the client side.

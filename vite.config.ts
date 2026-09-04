@@ -6,6 +6,8 @@ import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Relative asset paths let the app work from any GitHub Pages repository URL.
+  base: "./",
   plugins: [vlyPlugin(), react(), tailwindcss()],
   resolve: {
     alias: {
