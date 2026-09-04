@@ -95,14 +95,20 @@ export function CinematicHero({
   useEffect(() => {
     const card = mainCardRef.current;
     const mockup = mockupRef.current;
-    if (!card || !mockup) return;
+    const isTouchDevice = window.matchMedia("(pointer: coarse)").matches;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!card || !mockup || isTouchDevice || prefersReducedMotion) return;
 
-    // quickTo reuses a single tween instead of creating a new tween for every mouse event.
+    // Reuse one tween and one animation frame instead of doing layout work for every mouse event.
     const rotateYTo = gsap.quickTo(mockup, "rotationY", { duration: 0.8, ease: "power3.out" });
     const rotateXTo = gsap.quickTo(mockup, "rotationX", { duration: 0.8, ease: "power3.out" });
+    let frameId = 0;
+    let latestEvent: MouseEvent | null = null;
 
-    const handleMouseMove = (event: MouseEvent) => {
-      if (window.scrollY > window.innerHeight * 2) return;
+    const updateInteraction = () => {
+      frameId = 0;
+      if (!latestEvent || window.scrollY > window.innerHeight * 1.5) return;
+      const event = latestEvent;
       const rect = card.getBoundingClientRect();
       card.style.setProperty("--mouse-x", `${event.clientX - rect.left}px`);
       card.style.setProperty("--mouse-y", `${event.clientY - rect.top}px`);
@@ -112,8 +118,16 @@ export function CinematicHero({
       rotateXTo(-yVal * 12);
     };
 
+    const handleMouseMove = (event: MouseEvent) => {
+      latestEvent = event;
+      if (!frameId) frameId = requestAnimationFrame(updateInteraction);
+    };
+
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      if (frameId) cancelAnimationFrame(frameId);
+    };
   }, []);
 
   useEffect(() => {
@@ -131,7 +145,14 @@ export function CinematicHero({
         .to(".text-days", { duration: 1.4, clipPath: "inset(0 0% 0 0)", ease: "power4.inOut" }, "-=1");
 
       const scrollTimeline = gsap.timeline({
-        scrollTrigger: { trigger: containerRef.current, start: "top top", end: "+=2200", pin: true, scrub: 0.6, anticipatePin: 1 },
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top top",
+          end: isMobile ? "+=500" : "+=700",
+          pin: !isMobile,
+          scrub: 0.2,
+          anticipatePin: 1,
+        },
       });
       scrollTimeline
         .to([".hero-text-wrapper", ".bg-grid-theme"], { scale: 1.08, opacity: 0.2, ease: "power2.inOut", duration: 2 }, 0)

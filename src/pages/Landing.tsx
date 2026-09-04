@@ -7,247 +7,19 @@ import {
   Check,
   ChevronRight,
   CircleCheck,
-  FileText,
   GraduationCap,
   Layers3,
   Menu,
   MessageCircle,
-  Play,
   Sparkles,
   Video,
   WandSparkles,
   X,
-  Zap,
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import logo from "@/assets/logo.svg";
 import { CinematicHero } from "@/components/ui/cinematic-landing-hero";
-
-type DemoMode = "notes" | "video" | "cards";
-
-const demoModes: Array<{
-  id: DemoMode;
-  label: string;
-  icon: typeof FileText;
-  description: string;
-}> = [
-  {
-    id: "notes",
-    label: "Clear notes",
-    icon: FileText,
-    description: "The 30-second version",
-  },
-  {
-    id: "video",
-    label: "Mini lesson",
-    icon: Video,
-    description: "Watch the idea click",
-  },
-  {
-    id: "cards",
-    label: "Flashcards",
-    icon: Layers3,
-    description: "Quiz yourself later",
-  },
-];
-
-const sampleNotes =
-  "Photosynthesis is the process plants use to convert light energy into chemical energy. Chlorophyll absorbs light, mostly in the blue and red parts of the spectrum. The light-dependent reactions happen in the thylakoid membranes and produce ATP and NADPH. The Calvin cycle uses those molecules to make glucose.";
-
-function scrollToSection(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-}
-
-function GuideCharacter({
-  mode,
-  onClick,
-}: {
-  mode: DemoMode;
-  onClick: () => void;
-}) {
-  const messages: Record<DemoMode, string> = {
-    notes: "I speak fluent jargon.",
-    video: "Tiny lesson. Big aha.",
-    cards: "No peeking. Probably.",
-  };
-
-  return (
-    <motion.button
-      type="button"
-      aria-label="Get a learning pep talk"
-      onClick={onClick}
-      className="group absolute -bottom-7 -left-7 z-20 flex items-end gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#17201d] focus-visible:ring-offset-4"
-      animate={{ y: [0, -5, 0], rotate: [-1, 1, -1] }}
-      transition={{ duration: 3.8, repeat: Infinity, ease: "easeInOut" }}
-    >
-      <span className="relative flex h-[92px] w-[92px] items-center justify-center rounded-[34px] rounded-bl-[18px] border-[3px] border-[#17201d] bg-[#d8f36a] shadow-[5px_6px_0_#17201d] transition-transform duration-200 group-hover:rotate-[-5deg]">
-        <span className="absolute left-[23px] top-[31px] h-2.5 w-2.5 rounded-full bg-[#17201d]" />
-        <span className="absolute right-[23px] top-[31px] h-2.5 w-2.5 rounded-full bg-[#17201d]" />
-        <span className="absolute bottom-[22px] left-1/2 h-3 w-7 -translate-x-1/2 rounded-b-full border-b-[3px] border-[#17201d]" />
-        <span className="absolute -top-4 left-[27px] h-5 w-3 rotate-[-16deg] rounded-full bg-[#d8f36a]" />
-        <span className="absolute -top-5 right-[25px] h-6 w-3 rotate-[22deg] rounded-full bg-[#d8f36a]" />
-        <Sparkles className="absolute -right-2 -top-3 h-5 w-5 text-[#ff7357]" strokeWidth={3} />
-      </span>
-      <span className="mb-8 hidden max-w-[150px] rounded-2xl rounded-bl-sm border border-[#17201d]/10 bg-white px-3 py-2 text-xs font-semibold leading-4 text-[#17201d] shadow-[0_10px_24px_rgba(23,32,29,0.08)] sm:block">
-        {messages[mode]}
-      </span>
-    </motion.button>
-  );
-}
-
-function DemoOutput({ mode }: { mode: DemoMode }) {
-  if (mode === "video") {
-    return (
-      <motion.div
-        key="video"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative flex min-h-[260px] flex-col justify-between overflow-hidden rounded-[22px] bg-[#17201d] p-5 text-white"
-      >
-        <div className="relative z-10 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-white/55">
-          <span>01 / 04</span>
-          <span className="flex items-center gap-1.5 text-[#d8f36a]"><span className="h-1.5 w-1.5 rounded-full bg-[#d8f36a]" /> Playing</span>
-        </div>
-        <div className="relative z-10 my-3">
-          <div className="mb-3 flex h-24 items-center justify-center">
-            <div className="relative h-20 w-28 rounded-[18px] border-2 border-[#d8f36a] bg-[#31423a]">
-              <div className="absolute left-6 top-6 h-8 w-8 rounded-full bg-[#d8f36a]" />
-              <div className="absolute bottom-3 right-5 h-10 w-10 rounded-t-full border-2 border-[#ff967f] bg-[#ff7357]" />
-              <div className="absolute -right-6 top-4 h-10 w-10 rounded-full border-2 border-[#f5efe4] bg-[#f5efe4]" />
-              <div className="absolute -right-3 top-7 h-1.5 w-1.5 rounded-full bg-[#17201d]" />
-              <div className="absolute -right-1 top-7 h-1.5 w-1.5 rounded-full bg-[#17201d]" />
-            </div>
-            <div className="absolute h-px w-40 rotate-[-16deg] bg-white/10" />
-          </div>
-          <p className="max-w-[240px] text-xl font-semibold leading-6">Plants are basically tiny solar panels.</p>
-        </div>
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="h-1.5 flex-1 rounded-full bg-white/15"><div className="h-full w-[42%] rounded-full bg-[#d8f36a]" /></div>
-          <span className="text-[11px] text-white/50">0:42</span>
-        </div>
-        <span className="absolute -right-8 -top-8 h-28 w-28 rounded-full border-[18px] border-[#ff7357]/80" />
-        <span className="absolute -bottom-12 -left-8 h-28 w-28 rounded-full bg-[#4e7bff]/30" />
-      </motion.div>
-    );
-  }
-
-  if (mode === "cards") {
-    return (
-      <motion.div
-        key="cards"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="min-h-[260px] rounded-[22px] bg-[#eef0ec] p-5"
-      >
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b756f]">Quick check</p>
-            <p className="mt-1 text-sm font-semibold text-[#17201d]">Photosynthesis · 1 of 8</p>
-          </div>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#17201d]"><Zap className="h-4 w-4" /></div>
-        </div>
-        <div className="flex min-h-[156px] flex-col items-center justify-center rounded-[17px] border border-[#17201d]/10 bg-white px-7 text-center shadow-[0_8px_0_#dfe4dc]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b756f]">What does chlorophyll do?</p>
-          <p className="mt-3 text-lg font-semibold leading-6 text-[#17201d]">Tap to reveal your answer</p>
-          <button type="button" className="mt-5 text-xs font-semibold text-[#ef5f47] underline underline-offset-4">Reveal answer</button>
-        </div>
-      </motion.div>
-    );
-  }
-
-  return (
-    <motion.div
-      key="notes"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="min-h-[260px] rounded-[22px] bg-[#fffaf2] p-5"
-    >
-      <div className="mb-5 flex items-center justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6b756f]">In human-speak</p>
-          <p className="mt-1 text-sm font-semibold text-[#17201d]">Photosynthesis, but chill</p>
-        </div>
-        <span className="rounded-full bg-[#d8f36a] px-2.5 py-1 text-[10px] font-bold text-[#17201d]">98% clear</span>
-      </div>
-      <div className="space-y-3 text-sm leading-5 text-[#34423b]">
-        <p><span className="rounded bg-[#d8f36a] px-1 font-semibold text-[#17201d]">Photosynthesis</span> is how plants turn sunlight into food. Think of it as plant-powered meal prep.</p>
-        <div className="flex gap-2.5 rounded-xl border border-[#17201d]/10 bg-white/80 p-3"><CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#ef5f47]" /><span>Chlorophyll catches the light, especially blue and red light.</span></div>
-        <div className="flex gap-2.5 rounded-xl border border-[#17201d]/10 bg-white/80 p-3"><CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#ef5f47]" /><span>The light reactions make energy the plant can spend later.</span></div>
-      </div>
-    </motion.div>
-  );
-}
-
-function StudyDemo() {
-  const [mode, setMode] = useState<DemoMode>("notes");
-  const [notes, setNotes] = useState("");
-  const [pepTalk, setPepTalk] = useState(false);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 26 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.15, duration: 0.7 }}
-      className="relative rounded-[30px] border border-[#17201d]/10 bg-white p-3 shadow-[0_30px_70px_rgba(23,32,29,0.12)] sm:p-4"
-    >
-      <div className="rounded-[23px] border border-[#17201d]/10 bg-[#f7f8f5] p-4 sm:p-5">
-        <div className="mb-5 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#17201d] text-[#d8f36a]"><WandSparkles className="h-4 w-4" /></div>
-            <div><p className="text-sm font-bold text-[#17201d]">The learning remix</p><p className="text-[11px] text-[#7a837e]">A very small miracle</p></div>
-          </div>
-          <span className="hidden rounded-full border border-[#17201d]/10 bg-white px-2.5 py-1 text-[10px] font-bold text-[#7a837e] sm:inline-flex">LIVE PREVIEW</span>
-        </div>
-        <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="flex min-h-[260px] flex-col rounded-[22px] border border-[#17201d]/10 bg-white p-4">
-            <div className="mb-3 flex items-center justify-between"><p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#7a837e]">Your starting point</p><FileText className="h-4 w-4 text-[#ef5f47]" /></div>
-            <textarea
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="Paste notes, a guide, or the thing you promised you would read tonight..."
-              className="min-h-[145px] flex-1 resize-none border-0 bg-transparent text-sm leading-5 text-[#34423b] outline-none placeholder:text-[#a2aaa5]"
-              aria-label="Paste your notes"
-            />
-            <button
-              type="button"
-              onClick={() => setNotes(sampleNotes)}
-              className="mt-3 self-start text-xs font-bold text-[#ef5f47] underline decoration-[#ef5f47]/30 underline-offset-4 transition-colors hover:text-[#d44d38]"
-            >
-              Use a sample dump
-            </button>
-          </div>
-          <div className="relative min-w-0">
-            <div className="mb-3 flex gap-1 rounded-xl border border-[#17201d]/10 bg-white p-1">
-              {demoModes.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setMode(id)}
-                  className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[11px] font-bold transition-all sm:text-xs ${mode === id ? "bg-[#17201d] text-white shadow-sm" : "text-[#7a837e] hover:bg-[#f0f2ee] hover:text-[#17201d]"}`}
-                >
-                  <Icon className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{label}</span>
-                </button>
-              ))}
-            </div>
-            <DemoOutput mode={mode} />
-            <GuideCharacter mode={mode} onClick={() => setPepTalk((value) => !value)} />
-            {pepTalk && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 8 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="absolute -bottom-4 left-20 z-30 max-w-[190px] rounded-xl border border-[#17201d]/10 bg-[#d8f36a] px-3 py-2 text-xs font-bold leading-4 text-[#17201d] shadow-lg"
-              >
-                You do not need motivation. You need a less cursed study guide.
-              </motion.div>
-            )}
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
 
 const featureCards = [
   {
@@ -273,11 +45,14 @@ const featureCards = [
   },
 ];
 
+function scrollToSection(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+}
+
 export default function Landing() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const reduceMotion = useReducedMotion();
-
   const goToAuth = () => navigate("/auth?returnTo=/dashboard");
 
   return (
@@ -323,24 +98,6 @@ export default function Landing() {
         secondaryCtaLabel="Explore library"
         secondaryCtaHref="#/library"
       />
-
-      <section className="hidden">
-        <div className="pointer-events-none absolute -right-40 top-0 h-[460px] w-[460px] rounded-full border-[70px] border-[#d8f36a]/50" />
-        <div className="pointer-events-none absolute -left-24 bottom-14 h-44 w-44 rounded-full bg-[#ff967f]/40" />
-        <div className="relative grid items-center gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:gap-14">
-          <motion.div initial={{ opacity: 0, x: -22 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.65 }} className="relative z-10">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#17201d]/10 bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-[#68736c] shadow-sm"><span className="h-2 w-2 rounded-full bg-[#ef5f47]" />For people who learn differently</div>
-            <h1 className="max-w-[650px] text-[clamp(3.25rem,6.2vw,5.8rem)] font-extrabold leading-[0.93] tracking-[-0.07em] text-[#17201d]">Learning should fit<br /><span className="relative inline-block">the way you <span className="relative z-10">work.</span><span className="absolute bottom-1 left-0 right-0 -z-0 h-3 -rotate-2 rounded-full bg-[#d8f36a] sm:h-4" /></span></h1>
-            <p className="mt-7 max-w-[520px] text-base leading-7 text-[#68736c] sm:text-lg">Notefox turns dense information into clear notes, tiny illustrated lessons, and flashcards that help people learn faster without making learning feel like a chore.</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <button type="button" onClick={goToAuth} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#17201d] px-5 py-3.5 text-sm font-bold text-white shadow-[0_4px_0_#0c100e] transition-all hover:-translate-y-0.5 hover:bg-[#26362d]">Start learning for free <ArrowRight className="h-4 w-4" /></button>
-              <button type="button" onClick={() => scrollToSection("demo")} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#17201d]/15 bg-white px-5 py-3.5 text-sm font-bold text-[#17201d] transition-all hover:-translate-y-0.5 hover:border-[#17201d]/30 hover:shadow-sm"><Play className="h-4 w-4 fill-[#ef5f47] text-[#ef5f47]" /> See the magic</button>
-            </div>
-            <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-3 text-xs font-semibold text-[#87908a]"><span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#ef5f47]" /> No credit card</span><span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#ef5f47]" /> Made for modern learners</span><span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#ef5f47]" /> Actually understandable</span></div>
-          </motion.div>
-          <div id="demo" className="relative z-10 scroll-mt-8"><StudyDemo /></div>
-        </div>
-      </section>
 
       <section className="border-y border-[#17201d]/10 bg-white" aria-label="Customer proof">
         <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-x-8 gap-y-4 px-5 py-5 sm:px-8 lg:px-10">
