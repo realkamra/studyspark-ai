@@ -22,6 +22,7 @@ import {
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import logo from "@/assets/logo.svg";
+import { CinematicHero } from "@/components/ui/cinematic-landing-hero";
 
 type DemoMode = "notes" | "video" | "cards";
 
@@ -307,7 +308,23 @@ export default function Landing() {
         )}
       </nav>
 
-      <section id="top" className="relative mx-auto max-w-[1240px] px-5 pb-20 pt-10 sm:px-8 sm:pt-16 lg:px-10 lg:pb-28 lg:pt-20">
+      <CinematicHero
+        id="top"
+        brandName="Notefox"
+        tagline1="Make sense of it,"
+        tagline2="faster."
+        cardHeading="Learning, reimagined."
+        metricValue={98}
+        metricLabel="Clarity score"
+        ctaHeading="Make learning click."
+        ctaDescription="Turn dense information into clear, memorable learning your customers can use right away."
+        primaryCtaLabel="Start for free"
+        primaryCtaHref="#/auth?returnTo=%2Fdashboard"
+        secondaryCtaLabel="Explore library"
+        secondaryCtaHref="#/library"
+      />
+
+      <section className="hidden">
         <div className="pointer-events-none absolute -right-40 top-0 h-[460px] w-[460px] rounded-full border-[70px] border-[#d8f36a]/50" />
         <div className="pointer-events-none absolute -left-24 bottom-14 h-44 w-44 rounded-full bg-[#ff967f]/40" />
         <div className="relative grid items-center gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:gap-14">
