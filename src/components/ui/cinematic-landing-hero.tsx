@@ -54,6 +54,7 @@ const INJECTED_STYLES = `
   .btn-modern-dark { background: linear-gradient(180deg,#27272A 0%,#18181B 100%); color:#FFF; box-shadow: 0 0 0 1px rgba(255,255,255,.1),0 2px 4px rgba(0,0,0,.6),0 12px 24px -4px rgba(0,0,0,.9),inset 0 1px 1px rgba(255,255,255,.15),inset 0 -3px 6px rgba(0,0,0,.8); }
   .btn-modern-dark:hover { background: linear-gradient(180deg,#3F3F46 0%,#27272A 100%); }
   .progress-ring { transform: rotate(-90deg); transform-origin: center; stroke-dasharray: 402; stroke-dashoffset: 402; stroke-linecap: round; }
+  .scroll-hint { text-shadow: 0 2px 12px rgba(0,0,0,.45); }
 `;
 
 export interface CinematicHeroProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -138,6 +139,7 @@ export function CinematicHero({
       gsap.set(".main-card", { y: window.innerHeight + 200, autoAlpha: 1 });
       gsap.set([".card-left-text", ".card-right-text", ".mockup-scroll-wrapper", ".floating-badge", ".phone-widget"], { autoAlpha: 0 });
       gsap.set(".cta-wrapper", { autoAlpha: 0, scale: 0.8 });
+      gsap.set(".scroll-hint", { autoAlpha: 0, y: 8 });
 
       const introTimeline = gsap.timeline({ delay: 0.3 });
       introTimeline
@@ -148,10 +150,16 @@ export function CinematicHero({
         scrollTrigger: {
           trigger: containerRef.current,
           start: "top top",
-          end: isMobile ? "+=500" : "+=700",
-          pin: !isMobile,
+          end: isMobile ? "+=600" : "+=850",
+          pin: true,
           scrub: 0.2,
           anticipatePin: 1,
+          snap: {
+            snapTo: 1,
+            duration: { min: 0.2, max: 0.65 },
+            delay: 0.04,
+            ease: "power2.out",
+          },
         },
       });
       scrollTimeline
@@ -172,7 +180,9 @@ export function CinematicHero({
         .to([".mockup-scroll-wrapper", ".floating-badge", ".card-left-text", ".card-right-text"], { scale: 0.9, y: -40, z: -200, autoAlpha: 0, ease: "power3.in", duration: 1.2, stagger: 0.05 })
         .to(".main-card", { width: isMobile ? "92vw" : "85vw", height: isMobile ? "92vh" : "85vh", borderRadius: isMobile ? "32px" : "40px", ease: "expo.inOut", duration: 1.8 }, "pullback")
         .to(".cta-wrapper", { scale: 1, ease: "expo.inOut", duration: 1.8 }, "pullback")
-        .to(".main-card", { y: -window.innerHeight - 300, ease: "power3.in", duration: 1.5 });
+        .to(".scroll-hint", { autoAlpha: 1, y: 0, ease: "power2.out", duration: 0.5 }, "pullback+=1.2")
+        // Hold the finished state so the next wheel/touch gesture is what releases the hero.
+        .to({}, { duration: 1.5 });
     }, containerRef);
     return () => context.revert();
   }, [metricValue]);
@@ -195,6 +205,11 @@ export function CinematicHero({
           <a href={primaryCtaHref} className="btn-modern-light flex items-center justify-center gap-3 rounded-[1.25rem] px-8 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500"><span className="text-left"><span className="mb-[-2px] block text-[10px] font-bold uppercase tracking-wider text-neutral-500">Your next step</span><span className="block text-xl font-bold leading-none tracking-tight">{primaryCtaLabel}</span></span></a>
           <a href={secondaryCtaHref} className="btn-modern-dark flex items-center justify-center gap-3 rounded-[1.25rem] px-8 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500"><span className="text-left"><span className="mb-[-2px] block text-[10px] font-bold uppercase tracking-wider text-neutral-400">Browse the</span><span className="block text-xl font-bold leading-none tracking-tight">{secondaryCtaLabel}</span></span></a>
         </div>
+      </div>
+
+      <div className="scroll-hint pointer-events-none absolute bottom-5 left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-1 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">
+        <span>Scroll down to keep exploring</span>
+        <span className="text-lg leading-none text-[#d8f36a]">↓</span>
       </div>
 
       <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center" style={{ perspective: "1500px" }}>
