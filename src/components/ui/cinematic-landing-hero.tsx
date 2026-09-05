@@ -1,11 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { cn } from "@/lib/utils";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 const INJECTED_STYLES = `
   .gsap-reveal {
@@ -194,6 +189,20 @@ const INJECTED_STYLES = `
   .scroll-hint {
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
   }
+
+  @keyframes hint-bob {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(5px);
+    }
+  }
+
+  .hint-arrow {
+    animation: hint-bob 1.6s ease-in-out infinite;
+  }
 `;
 
 export interface CinematicHeroProps
@@ -313,7 +322,30 @@ export function CinematicHero({
   }, []);
 
   useEffect(() => {
+    const container = containerRef.current;
+
+    if (!container) {
+      return;
+    }
+
     const isMobile = window.innerWidth < 768;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    let hasStarted = false;
+    let hasCompleted = false;
+
+    const lockScroll = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+    };
+
+    const unlockScroll = () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
 
     const context = gsap.context(() => {
       gsap.set(".text-track", {
@@ -348,7 +380,7 @@ export function CinematicHero({
 
       gsap.set(".cta-wrapper", {
         autoAlpha: 0,
-        scale: 0.8,
+        scale: 0.9,
       });
 
       gsap.set(".scroll-hint", {
@@ -356,11 +388,12 @@ export function CinematicHero({
         y: 8,
       });
 
+      // Headline entrance on page load (independent of the cinematic).
       const introTimeline = gsap.timeline({ delay: 0.3 });
 
       introTimeline
         .to(".text-track", {
-          duration: 1.8,
+          duration: 1.6,
           autoAlpha: 1,
           y: 0,
           scale: 1,
@@ -370,69 +403,65 @@ export function CinematicHero({
         .to(
           ".text-days",
           {
-            duration: 1.4,
+            duration: 1.3,
             clipPath: "inset(0 0% 0 0)",
             ease: "power4.inOut",
           },
-          "-=1",
+          "-=0.9",
         );
 
-      const scrollTimeline = gsap.timeline({
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top top",
-          end: isMobile ? "+=600" : "+=850",
-          pin: true,
-          scrub: 0.2,
-          anticipatePin: 1,
-          snap: {
-            snapTo: 1,
-            duration: {
-              min: 0.2,
-              max: 0.65,
-            },
-            delay: 0.04,
-            ease: "power2.out",
-          },
+      // The cinematic sequence. Time-based: it plays itself once, at a
+      // readable pace, and simply stops on its final frame.
+      const cinematic = gsap.timeline({
+        paused: true,
+        onComplete: () => {
+          hasCompleted = true;
+          unlockScroll();
         },
       });
 
-      scrollTimeline
+      cinematic
+        // 1. Headline steps back while the card rises.
         .to(
           [".hero-text-wrapper", ".bg-grid-theme"],
           {
-            scale: 1.08,
-            opacity: 0.2,
+            scale: 1.1,
+            opacity: 0.15,
+            duration: 1.1,
             ease: "power2.inOut",
-            duration: 2,
           },
           0,
         )
+        .set(".start-hint", { autoAlpha: 0 }, 0)
         .to(
           ".main-card",
           {
             y: 0,
-            ease: "power3.inOut",
-            duration: 2,
+            duration: 1.7,
+            ease: "power3.out",
           },
-          0,
+          0.1,
         )
+
+        // 2. The card expands to fill the view.
         .to(".main-card", {
           width: "100%",
           height: "100%",
           borderRadius: "0px",
-          ease: "power3.inOut",
-          duration: 1.5,
+          duration: 1.2,
+          ease: "power2.inOut",
         })
+
+        // 3. The phone arrives.
         .fromTo(
           ".mockup-scroll-wrapper",
           {
-            y: 300,
-            z: -500,
-            rotationX: 50,
-            rotationY: -30,
+            y: 260,
+            z: -400,
+            rotationX: 40,
+            rotationY: -24,
             autoAlpha: 0,
-            scale: 0.6,
+            scale: 0.7,
           },
           {
             y: 0,
@@ -441,36 +470,39 @@ export function CinematicHero({
             rotationY: 0,
             autoAlpha: 1,
             scale: 1,
+            duration: 1.8,
             ease: "expo.out",
-            duration: 2.5,
           },
-          "-=0.8",
         )
+
+        // 4. The app interface builds itself.
         .fromTo(
           ".phone-widget",
           {
-            y: 40,
+            y: 36,
             autoAlpha: 0,
-            scale: 0.95,
+            scale: 0.96,
           },
           {
             y: 0,
             autoAlpha: 1,
             scale: 1,
-            stagger: 0.15,
-            ease: "back.out(1.2)",
-            duration: 1.5,
+            stagger: 0.28,
+            duration: 1.1,
+            ease: "back.out(1.4)",
           },
-          "-=1.5",
+          "-=1.2",
         )
+
+        // 5. The progress ring draws and the counter counts up.
         .to(
           ".progress-ring",
           {
             strokeDashoffset: 60,
-            duration: 2,
-            ease: "power3.inOut",
+            duration: 1.7,
+            ease: "power2.inOut",
           },
-          "-=1.2",
+          "-=0.9",
         )
         .to(
           ".counter-val",
@@ -479,64 +511,69 @@ export function CinematicHero({
             snap: {
               innerHTML: 1,
             },
-            duration: 2,
-            ease: "expo.out",
+            duration: 1.7,
+            ease: "power2.out",
           },
-          "-=2",
+          "<",
         )
+
+        // 6. The floating proof badges pop in.
         .fromTo(
           ".floating-badge",
           {
-            y: 100,
+            y: 90,
             autoAlpha: 0,
-            scale: 0.7,
-            rotationZ: -10,
+            scale: 0.75,
+            rotationZ: -8,
           },
           {
             y: 0,
             autoAlpha: 1,
             scale: 1,
             rotationZ: 0,
-            ease: "back.out(1.5)",
-            duration: 1.5,
-            stagger: 0.2,
+            stagger: 0.35,
+            duration: 1.2,
+            ease: "back.out(1.6)",
           },
-          "-=2",
+          "-=1.1",
         )
+
+        // 7. The card copy slides in.
         .fromTo(
           ".card-left-text",
           {
-            x: -50,
+            x: -40,
             autoAlpha: 0,
           },
           {
             x: 0,
             autoAlpha: 1,
-            ease: "power4.out",
-            duration: 1.5,
+            duration: 1.2,
+            ease: "power3.out",
           },
-          "-=1.5",
+          "-=1",
         )
         .fromTo(
           ".card-right-text",
           {
-            x: 50,
+            x: 40,
             autoAlpha: 0,
-            scale: 0.8,
+            scale: 0.9,
           },
           {
             x: 0,
             autoAlpha: 1,
             scale: 1,
-            ease: "expo.out",
-            duration: 1.5,
+            duration: 1.2,
+            ease: "power3.out",
           },
-          "<",
+          "<+0.15",
         )
-        .to({}, { duration: 2.5 })
-        .set(".hero-text-wrapper", { autoAlpha: 0 })
-        .set(".cta-wrapper", { autoAlpha: 1 })
-        .to({}, { duration: 1.5 })
+
+        // 8. A quiet beat so the finished card can actually be read.
+        .to({}, { duration: 1.1 })
+
+        // 9. The card tidies itself into its resting frame.
         .to(
           [
             ".mockup-scroll-wrapper",
@@ -545,13 +582,12 @@ export function CinematicHero({
             ".card-right-text",
           ],
           {
-            scale: 0.9,
-            y: -40,
-            z: -200,
+            y: -30,
             autoAlpha: 0,
-            ease: "power3.in",
-            duration: 1.2,
+            scale: 0.95,
             stagger: 0.05,
+            duration: 1,
+            ease: "power2.in",
           },
         )
         .to(
@@ -560,32 +596,133 @@ export function CinematicHero({
             width: isMobile ? "92vw" : "85vw",
             height: isMobile ? "92vh" : "85vh",
             borderRadius: isMobile ? "32px" : "40px",
-            ease: "expo.inOut",
-            duration: 1.8,
+            duration: 1.2,
+            ease: "power2.inOut",
           },
-          "pullback",
+          "<",
         )
+
+        // 10. The call to action settles on top. This frame stays.
+        .set(".hero-text-wrapper", { autoAlpha: 0 })
         .to(
           ".cta-wrapper",
           {
+            autoAlpha: 1,
             scale: 1,
-            ease: "expo.inOut",
-            duration: 1.8,
+            duration: 0.9,
+            ease: "power2.out",
           },
-          "pullback",
+          "<+=0.5",
         )
         .to(
           ".scroll-hint",
           {
             autoAlpha: 1,
             y: 0,
-            ease: "power2.out",
             duration: 0.5,
+            ease: "power2.out",
           },
-          "pullback+=1.2",
-        )
-        .to({}, { duration: 1.5 });
-    }, containerRef);
+          ">-0.2",
+        );
+
+      // Jump straight to the finished frame with no animation. Used when a
+      // visitor arrives already scrolled past the hero, or with reduced
+      // motion, so the hero is never caught in a broken intermediate state.
+      const finishInstantly = () => {
+        hasStarted = true;
+        hasCompleted = true;
+        unlockScroll();
+        cinematic.progress(1);
+
+        // Already scrolled past the hero: keep the hint out of the way.
+        if (window.scrollY > window.innerHeight * 0.7) {
+          gsap.set(".scroll-hint", { autoAlpha: 0 });
+        }
+      };
+
+      const handleFirstIntent = () => {
+        if (hasStarted) {
+          return;
+        }
+
+        // Arrived mid-page (scroll restore, anchor link): park on the final
+        // frame instead of replaying the show from the top.
+        if (window.scrollY > 4) {
+          finishInstantly();
+
+          return;
+        }
+
+        hasStarted = true;
+        lockScroll();
+        cinematic.play(0);
+      };
+
+      const handleScroll = () => {
+        if (!hasStarted) {
+          // Scrolled past the hero by other means (scrollbar drag, anchor
+          // link, restore): skip the show and park on the final frame.
+          if (window.scrollY > 4) {
+            finishInstantly();
+          }
+
+          return;
+        }
+
+        if (hasCompleted) {
+          // The hint only belongs to the hero, so fade it while the rest of
+          // the page is on screen.
+          const inHero = window.scrollY < window.innerHeight * 0.7;
+
+          gsap.to(".scroll-hint", {
+            autoAlpha: inHero ? 1 : 0,
+            duration: 0.25,
+            overwrite: "auto",
+          });
+        }
+      };
+
+      const handleKeyDown = (event: KeyboardEvent) => {
+        const nextKeys = [
+          "ArrowDown",
+          "PageDown",
+          " ",
+          "Spacebar",
+        ];
+
+        if (nextKeys.includes(event.key)) {
+          handleFirstIntent();
+        }
+      };
+
+      if (window.scrollY > 4) {
+        // Loaded mid-page (scroll restore, anchor link): skip the show.
+        finishInstantly();
+      } else if (prefersReducedMotion) {
+        introTimeline.progress(1);
+        finishInstantly();
+      } else {
+        window.addEventListener("wheel", handleFirstIntent, {
+          passive: true,
+        });
+        window.addEventListener("touchmove", handleFirstIntent, {
+          passive: true,
+        });
+        window.addEventListener("keydown", handleKeyDown);
+      }
+
+      window.addEventListener("scroll", handleScroll, {
+        passive: true,
+      });
+
+      return () => {
+        window.removeEventListener("wheel", handleFirstIntent);
+        window.removeEventListener("touchmove", handleFirstIntent);
+        window.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("scroll", handleScroll);
+        unlockScroll();
+      };
+    }, container);
 
     return () => context.revert();
   }, [metricValue]);
@@ -618,12 +755,26 @@ export function CinematicHero({
         </h1>
       </div>
 
-      <div className="cta-wrapper pointer-events-auto gsap-reveal absolute z-10 flex w-screen flex-col items-center justify-center px-4 text-center will-change-transform">
-        <h2 className="text-silver-matte mb-6 text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl">
+      <div className="start-hint pointer-events-none fixed bottom-5 left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-1 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-foreground/60">
+        <span>Scroll to see how it works</span>
+        <span className="hint-arrow text-lg leading-none text-[#ef5f47]">
+          ↓
+        </span>
+      </div>
+
+      <div className="scroll-hint pointer-events-none fixed bottom-5 left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-1 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">
+        <span>Scroll down to keep exploring</span>
+        <span className="hint-arrow text-lg leading-none text-[#d8f36a]">
+          ↓
+        </span>
+      </div>
+
+      <div className="cta-wrapper pointer-events-auto gsap-reveal absolute z-30 flex w-screen flex-col items-center justify-center px-4 text-center will-change-transform">
+        <h2 className="text-card-silver-matte mb-6 text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl">
           {ctaHeading}
         </h2>
 
-        <p className="mb-12 max-w-xl text-lg font-light leading-relaxed text-muted-foreground md:text-xl">
+        <p className="mb-12 max-w-xl text-lg font-light leading-relaxed text-blue-100/70 md:text-xl">
           {ctaDescription}
         </p>
 
@@ -656,11 +807,6 @@ export function CinematicHero({
             </span>
           </a>
         </div>
-      </div>
-
-      <div className="scroll-hint pointer-events-none absolute bottom-5 left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-1 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">
-        <span>Scroll down to keep exploring</span>
-        <span className="text-lg leading-none text-[#d8f36a]">↓</span>
       </div>
 
       <div
