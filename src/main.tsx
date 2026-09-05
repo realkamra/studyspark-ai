@@ -25,6 +25,7 @@ const VlyToolbar = lazy(() =>
 const Landing = lazy(() => import("./pages/Landing.tsx"));
 const AuthPage = lazy(() => import("./pages/Auth.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
+const StudySetPage = lazy(() => import("./pages/StudySet.tsx"));
 const Library = lazy(() => import("./pages/Library.tsx"));
 const LibraryDetail = lazy(() => import("./pages/LibraryDetail.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
@@ -134,6 +135,15 @@ function AppRoutes() {
         element={
           <RequireAuth>
             <Dashboard />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/set/:setId"
+        element={
+          <RequireAuth>
+            <StudySetPage />
           </RequireAuth>
         }
       />

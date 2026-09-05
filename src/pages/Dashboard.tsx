@@ -2,61 +2,563 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   BookOpen,
-  FilePlus2,
+  Brain,
   FileText,
-  FolderOpen,
   LayoutDashboard,
   Library,
+  Link2,
+  ListChecks,
+  Loader2,
   LogOut,
   Plus,
   Search,
   Sparkles,
-  Upload,
-  Video,
+  WandSparkles,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+import { useAction, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import logo from "@/assets/logo.svg";
-import { getAllLibraryItems, saveUploadedItem, type LearningItem } from "@/lib/library-data";
+import { getAllLibraryItems, type LearningItem } from "@/lib/library-data";
 import { useAuth } from "@/hooks/use-auth";
+import { FoxMascot, type FoxMood } from "@/components/FoxMascot";
 
-const formatIcons = { Guide: FileText, Video, Flashcards: BookOpen };
+const formatIcons = { Guide: FileText, Video: BookOpen, Flashcards: Brain };
 const accentClasses = { lime: "bg-[#d8f36a]", coral: "bg-[#ff967f]", blue: "bg-[#9eb8ff]" };
 
-type WorkspaceView = "overview" | "library" | "uploads";
+type WorkspaceView = "create" | "sets" | "library";
+
+const thinkingQuips = [
+  "Reading your notes...",
+  "Removing the jargon...",
+  "Simplifying the tricky bits...",
+  "Writing tiny explanations...",
+  "Hiding extra flashcards in the yard...",
+  "Sharpening pencils...",
+];
+
+const SAMPLE_NOTES = `Mitochondria are organelles found in most eukaryotic cells. They are often called the powerhouse of the cell because they generate most of the cell's supply of ATP, which is used as a source of chemical energy. Mitochondria have their own DNA, separate from the cell's nuclear DNA, which supports the endosymbiotic theory: that mitochondria were once free-living bacteria that were engulfed by early cells. The inner membrane of a mitochondrion is folded into structures called cristae, which increase the surface area available for the electron transport chain. The electron transport chain uses oxygen to produce ATP through oxidative phosphorylation. Cells with high energy demands, like muscle cells, contain many more mitochondria than less active cells.`;
+
+function formatDate(timestamp: number) {
+  return new Date(timestamp).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [view, setView] = useState<WorkspaceView>("overview");
+  const [view, setView] = useState<WorkspaceView>("create");
   const [query, setQuery] = useState("");
-  const [uploadedItems, setUploadedItems] = useState<LearningItem[]>(() => getAllLibraryItems().filter((item) => item.isOwned));
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const allItems = getAllLibraryItems();
-  const recentItems = allItems.slice(0, 3);
-  const filteredItems = useMemo(() => allItems.filter((item) => `${item.title} ${item.category}`.toLowerCase().includes(query.toLowerCase())), [allItems, query]);
+  const [notes, setNotes] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [quipsIndex, setQuipsIndex] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSignOut = async () => { await signOut(); navigate("/"); };
-  const openUpload = () => { setIsUploadOpen(true); window.setTimeout(() => fileInputRef.current?.focus(), 0); };
-  const handleUpload = (event: React.FormEvent<HTMLFormElement>) => {
+  const studySets = useQuery(api.studySets.listMyStudySets) ?? [];
+  const generateStudyMaterials = useAction(
+    api.studyMaterials.generateStudyMaterials,
+  );
+
+  const mood: FoxMood = error
+    ? "sad"
+    : isGenerating
+      ? "thinking"
+      : notes.trim().length > 40
+        ? "excited"
+        : "idle";
+
+  const wordCount = useMemo(
+    () => notes.trim().split(/\s+/).filter(Boolean).length,
+    [notes],
+  );
+
+  useEffect(() => {
+    if (!isGenerating) return;
+    const timer = window.setInterval(
+      () => setQuipsIndex((index) => (index + 1) % thinkingQuips.length),
+      2400,
+    );
+    return () => window.clearInterval(timer);
+  }, [isGenerating]);
+
+  const allItems = getAllLibraryItems();
+  const filteredItems = useMemo(
+    () =>
+      allItems.filter((item) =>
+        `${item.title} ${item.category}`
+          .toLowerCase()
+          .includes(query.toLowerCase()),
+      ),
+    [allItems, query],
+  );
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
+  const handleGenerate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!title.trim()) return;
-    const item: LearningItem = { id: `upload-${Date.now()}`, title: title.trim(), description: description.trim() || "A personal resource ready to be turned into clearer learning materials.", category: "My materials", format: "Guide", duration: "Personal upload", accent: "lime", publishedBy: user?.name || "You", isOwned: true, sourceName: "Personal upload" };
-    saveUploadedItem(item);
-    setUploadedItems((items) => [item, ...items]);
-    setTitle(""); setDescription(""); setIsUploadOpen(false);
-    toast.success("Resource added to your workspace", { description: "You can find it in My materials." });
+    setError(null);
+
+    if (notes.trim().length < 40) {
+      setError("Give me a little more to work with — at least a few sentences.");
+      return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+      const setId = await generateStudyMaterials({ notes: notes.trim() });
+      toast.success("Your study set is ready!", {
+        description: "Notes, flashcards, quiz, and a matching game.",
+      });
+      navigate(`/set/${setId}`);
+    } catch (generationError) {
+      setError(
+        generationError instanceof Error
+          ? generationError.message
+          : "Something went wrong. Try again.",
+      );
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
-    <main className="min-h-screen bg-[#f7f8f5] text-[#17201d]"><div className="flex min-h-screen"><aside className="hidden w-[238px] shrink-0 border-r border-[#17201d]/10 bg-white p-5 lg:flex lg:flex-col"><button type="button" onClick={() => navigate("/")} className="flex items-center gap-2.5 px-2"><img src={logo} alt="Notefox mark" className="h-8 w-8 rounded-[9px] bg-[#17201d]" /><span className="text-[17px] font-extrabold tracking-[-0.03em]">notefox<span className="text-[#ef5f47]">.</span></span></button><div className="mt-12 space-y-1">{[{ id: "overview", label: "Overview", icon: LayoutDashboard }, { id: "library", label: "Explore library", icon: Library }, { id: "uploads", label: "My materials", icon: FolderOpen }].map(({ id, label, icon: Icon }) => (<button type="button" key={id} onClick={() => setView(id as WorkspaceView)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold transition-colors ${view === id ? "bg-[#17201d] text-white" : "text-[#68736c] hover:bg-[#f7f8f5] hover:text-[#17201d]"}`}><Icon className="h-4 w-4" />{label}</button>))}</div><div className="mt-auto rounded-2xl bg-[#d8f36a] p-4"><Sparkles className="h-5 w-5" /><p className="mt-3 text-sm font-extrabold leading-5">Keep learning in your own language.</p><button type="button" onClick={openUpload} className="mt-4 text-xs font-bold underline underline-offset-4">Add a resource</button></div></aside><div className="min-w-0 flex-1"><header className="flex items-center justify-between border-b border-[#17201d]/10 bg-white px-5 py-4 sm:px-8"><button type="button" onClick={() => navigate("/")} className="flex items-center gap-2.5 lg:hidden"><img src={logo} alt="Notefox mark" className="h-8 w-8 rounded-[9px] bg-[#17201d]" /><span className="text-[17px] font-extrabold">notefox<span className="text-[#ef5f47]">.</span></span></button><div className="hidden text-sm font-bold text-[#68736c] lg:block">{view === "overview" ? "Your learning space" : view === "library" ? "Explore the library" : "Your materials"}</div><div className="flex items-center gap-3"><span className="hidden text-right sm:block"><span className="block text-sm font-bold">{user?.name || "Learning partner"}</span><span className="block text-xs text-[#87908a]">Personal workspace</span></span><button type="button" onClick={handleSignOut} aria-label="Sign out" className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#17201d]/10 text-[#68736c] transition-colors hover:bg-[#f7f8f5] hover:text-[#17201d]"><LogOut className="h-4 w-4" /></button></div></header><div className="mx-auto max-w-[1180px] px-5 py-8 sm:px-8 lg:px-10 lg:py-12"><div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-[#ef5f47]">{view === "overview" ? "Good to see you" : view === "library" ? "Curated for curious people" : "Your corner of the library"}</p><h1 className="text-4xl font-extrabold leading-[0.98] tracking-[-0.055em] sm:text-5xl">{view === "overview" ? <>What are we<br />making clearer?</> : view === "library" ? <>Find something<br />worth knowing.</> : <>Your ideas,<br />organized.</>}</h1></div><button type="button" onClick={openUpload} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#17201d] px-4 py-3 text-sm font-bold text-white shadow-[0_3px_0_#0c100e] transition-transform hover:-translate-y-0.5"><Plus className="h-4 w-4" /> Add resource</button></div>{view === "overview" && <><section className="grid gap-4 md:grid-cols-3"><div className="rounded-[22px] bg-[#17201d] p-5 text-white md:col-span-2"><div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-white/50">Start here</p><h2 className="mt-2 max-w-[330px] text-2xl font-extrabold leading-[1.05]">Turn a rough idea into something people can use.</h2></div><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d8f36a] text-[#17201d]"><FilePlus2 className="h-5 w-5" /></div></div><button type="button" onClick={openUpload} className="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#17201d]">Upload your content <ArrowRight className="h-4 w-4" /></button></div><div className="rounded-[22px] border border-[#17201d]/10 bg-white p-5"><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#87908a]">Your library</p><p className="mt-3 text-4xl font-extrabold tracking-[-0.05em]">{uploadedItems.length}</p><p className="mt-1 text-sm text-[#68736c]">personal resources</p><button type="button" onClick={() => setView("uploads")} className="mt-7 text-xs font-bold text-[#ef5f47]">View my materials <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></button></div></section><section className="mt-10"><div className="mb-4 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#87908a]">Keep exploring</p><h2 className="mt-1 text-xl font-extrabold">Popular right now</h2></div><button type="button" onClick={() => setView("library")} className="text-xs font-bold text-[#ef5f47]">See all <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></button></div><ResourceGrid items={recentItems} onOpen={(id) => navigate(`/library/${id}`)} /></section></>}{view === "library" && <><div className="relative mb-6"><Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#87908a]" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search the library..." className="h-12 w-full rounded-xl border border-[#17201d]/15 bg-white pl-11 pr-4 text-sm outline-none focus:border-[#17201d]/35 focus:ring-2 focus:ring-[#d8f36a]" /></div><ResourceGrid items={filteredItems} onOpen={(id) => navigate(`/library/${id}`)} /></>}{view === "uploads" && <><div className="mb-6 rounded-[22px] border border-dashed border-[#17201d]/20 bg-white p-6 sm:p-8"><div className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-center"><div><Upload className="h-6 w-6 text-[#ef5f47]" /><h2 className="mt-3 text-xl font-extrabold">Bring your own material</h2><p className="mt-1 max-w-[500px] text-sm leading-6 text-[#68736c]">Upload the notes, guide, or internal resource you want to make clearer.</p></div><button type="button" onClick={openUpload} className="inline-flex items-center gap-2 rounded-xl bg-[#d8f36a] px-4 py-3 text-sm font-bold"><Upload className="h-4 w-4" /> Upload content</button></div></div>{uploadedItems.length ? <ResourceGrid items={uploadedItems} onOpen={(id) => navigate(`/library/${id}`)} /> : <div className="rounded-[22px] border border-[#17201d]/10 bg-white px-6 py-16 text-center"><FolderOpen className="mx-auto h-8 w-8 text-[#ef5f47]" /><h2 className="mt-4 text-xl font-extrabold">Your materials will live here</h2><p className="mt-2 text-sm text-[#68736c]">Add your first resource to start building your own learning space.</p></div>}</>}{isUploadOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#17201d]/35 p-5"><motion.form initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} onSubmit={handleUpload} className="w-full max-w-lg rounded-[24px] border border-[#17201d]/10 bg-white p-6 shadow-2xl sm:p-8"><div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#ef5f47]">New resource</p><h2 className="mt-2 text-2xl font-extrabold">Add something to learn from</h2></div><button type="button" onClick={() => setIsUploadOpen(false)} aria-label="Close upload dialog" className="text-2xl leading-none text-[#87908a]">×</button></div><label className="mt-7 block text-xs font-bold text-[#68736c]">Resource title<input required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="For example, Product onboarding basics" className="mt-2 h-11 w-full rounded-xl border border-[#17201d]/15 px-3 text-sm outline-none focus:ring-2 focus:ring-[#d8f36a]" /></label><label className="mt-4 block text-xs font-bold text-[#68736c]">What is it about?<textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="A short description makes it easier to find later." className="mt-2 min-h-24 w-full resize-y rounded-xl border border-[#17201d]/15 p-3 text-sm outline-none focus:ring-2 focus:ring-[#d8f36a]" /></label><div className="mt-4 rounded-xl border border-dashed border-[#17201d]/15 bg-[#f7f8f5] p-4"><input ref={fileInputRef} type="file" className="w-full text-xs text-[#68736c]" aria-label="Choose a file to upload" /><p className="mt-2 text-[11px] text-[#87908a]">Prototype mode: your title and description are saved locally.</p></div><div className="mt-7 flex justify-end gap-3"><button type="button" onClick={() => setIsUploadOpen(false)} className="rounded-xl px-4 py-3 text-sm font-bold text-[#68736c]">Cancel</button><button type="submit" className="inline-flex items-center gap-2 rounded-xl bg-[#17201d] px-4 py-3 text-sm font-bold text-white">Add to workspace <ArrowRight className="h-4 w-4" /></button></div></motion.form></div>}</div></div></div></main>
+    <main className="min-h-screen bg-[#f7f8f5] text-[#17201d]">
+      <div className="flex min-h-screen">
+        {/* Sidebar */}
+        <aside className="hidden w-[238px] shrink-0 border-r border-[#17201d]/10 bg-white p-5 lg:flex lg:flex-col">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2.5 px-2"
+          >
+            <img
+              src={logo}
+              alt="Notefox mark"
+              className="h-8 w-8 rounded-[9px] bg-[#17201d]"
+            />
+            <span className="text-[17px] font-extrabold tracking-[-0.03em]">
+              notefox<span className="text-[#ef5f47]">.</span>
+            </span>
+          </button>
+
+          <div className="mt-12 space-y-1">
+            {[
+              { id: "create", label: "Create", icon: WandSparkles },
+              { id: "sets", label: "My study sets", icon: LayoutDashboard },
+              { id: "library", label: "Explore library", icon: Library },
+            ].map(({ id, label, icon: Icon }) => (
+              <button
+                type="button"
+                key={id}
+                onClick={() => setView(id as WorkspaceView)}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold transition-colors ${
+                  view === id
+                    ? "bg-[#17201d] text-white"
+                    : "text-[#68736c] hover:bg-[#f7f8f5] hover:text-[#17201d]"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-auto rounded-2xl bg-[#d8f36a] p-4">
+            <FoxMascot mood="idle" size={44} />
+            <p className="mt-3 text-sm font-extrabold leading-5">
+              Paste anything. I&apos;ll make it make sense.
+            </p>
+          </div>
+        </aside>
+
+        <div className="min-w-0 flex-1">
+          {/* Top bar */}
+          <header className="flex items-center justify-between border-b border-[#17201d]/10 bg-white px-5 py-4 sm:px-8">
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="flex items-center gap-2.5 lg:hidden"
+            >
+              <img
+                src={logo}
+                alt="Notefox mark"
+                className="h-8 w-8 rounded-[9px] bg-[#17201d]"
+              />
+              <span className="text-[17px] font-extrabold">
+                notefox<span className="text-[#ef5f47]">.</span>
+              </span>
+            </button>
+
+            <div className="hidden text-sm font-bold text-[#68736c] lg:block">
+              {view === "create"
+                ? "Your learning space"
+                : view === "sets"
+                  ? "Your study sets"
+                  : "Explore the library"}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="hidden text-right sm:block">
+                <span className="block text-sm font-bold">
+                  {user?.name || "Learning partner"}
+                </span>
+                <span className="block text-xs text-[#87908a]">
+                  Personal workspace
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                aria-label="Sign out"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#17201d]/10 text-[#68736c] transition-colors hover:bg-[#f7f8f5] hover:text-[#17201d]"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          </header>
+
+          <div className="mx-auto max-w-[1180px] px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
+            {/* CREATE VIEW */}
+            {view === "create" && (
+              <>
+                <div className="mb-8">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-[#ef5f47]">
+                    Good to see you
+                  </p>
+                  <h1 className="text-4xl font-extrabold leading-[0.98] tracking-[-0.055em] sm:text-5xl">
+                    What are we
+                    <br />
+                    making clearer?
+                  </h1>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+                  <form
+                    onSubmit={handleGenerate}
+                    className="rounded-[22px] border border-[#17201d]/10 bg-white p-6 sm:p-7"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d8f36a]">
+                        <Sparkles className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <h2 className="font-extrabold">Paste your notes</h2>
+                        <p className="text-xs text-[#68736c]">
+                          Lecture notes, textbook paragraphs, a brain dump —
+                          anything.
+                        </p>
+                      </div>
+                    </div>
+
+                    <textarea
+                      value={notes}
+                      onChange={(event) => setNotes(event.target.value)}
+                      disabled={isGenerating}
+                      placeholder="Paste your notes here. The more the better — but even a few messy paragraphs work."
+                      className="mt-5 min-h-[220px] w-full resize-y rounded-2xl border border-[#17201d]/15 bg-[#fffaf2] p-4 text-sm leading-6 outline-none transition-shadow placeholder:text-[#a2aaa5] focus:ring-2 focus:ring-[#d8f36a] disabled:opacity-60"
+                    />
+
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 text-xs font-bold text-[#87908a]">
+                        <span>{wordCount} words</span>
+                        <button
+                          type="button"
+                          onClick={() => setNotes(SAMPLE_NOTES)}
+                          disabled={isGenerating}
+                          className="text-[#ef5f47] underline underline-offset-4 hover:text-[#c94a34] disabled:opacity-50"
+                        >
+                          Try an example
+                        </button>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isGenerating}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#17201d] px-5 py-3 text-sm font-bold text-white shadow-[0_3px_0_#0c100e] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Making it make sense...
+                          </>
+                        ) : (
+                          <>
+                            <WandSparkles className="h-4 w-4" />
+                            Make it make sense
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {error && (
+                      <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#ef5f47]/30 bg-[#ffefeb] p-4">
+                        <FoxMascot mood="sad" size={40} />
+                        <div>
+                          <p className="text-sm font-bold">Hmm, that didn&apos;t work.</p>
+                          <p className="text-xs leading-5 text-[#68736c]">
+                            {error}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </form>
+
+                  <div className="flex flex-col items-center justify-center rounded-[22px] border border-[#17201d]/10 bg-white p-6 text-center">
+                    <FoxMascot mood={mood} size={120} />
+                    {isGenerating ? (
+                      <p className="mt-5 text-sm font-extrabold">
+                        {thinkingQuips[quipsIndex]}
+                      </p>
+                    ) : (
+                      <p className="mt-5 text-sm font-extrabold">
+                        {error
+                          ? "Not your fault. Really. Try again."
+                          : mood === "excited"
+                            ? "Ooh, good notes. Hit the button!"
+                            : "I'm ready when you are."}
+                      </p>
+                    )}
+                    <p className="mt-2 max-w-[220px] text-xs leading-5 text-[#68736c]">
+                      You&apos;ll get clear notes, flashcards, a quiz, and a
+                      matching game.
+                    </p>
+                  </div>
+                </div>
+
+                {studySets.length > 0 && (
+                  <section className="mt-10">
+                    <div className="mb-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#87908a]">
+                          Fresh from the den
+                        </p>
+                        <h2 className="mt-1 text-xl font-extrabold">
+                          Your latest study sets
+                        </h2>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setView("sets")}
+                        className="text-xs font-bold text-[#ef5f47]"
+                      >
+                        See all <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <StudySetGrid
+                      sets={studySets.slice(0, 3)}
+                      onOpen={(id) => navigate(`/set/${id}`)}
+                    />
+                  </section>
+                )}
+              </>
+            )}
+
+            {/* STUDY SETS VIEW */}
+            {view === "sets" && (
+              <>
+                <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-[#ef5f47]">
+                      Your corner of the library
+                    </p>
+                    <h1 className="text-4xl font-extrabold leading-[0.98] tracking-[-0.055em] sm:text-5xl">
+                      Your ideas,
+                      <br />
+                      organized.
+                    </h1>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setView("create")}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#17201d] px-4 py-3 text-sm font-bold text-white shadow-[0_3px_0_#0c100e] transition-transform hover:-translate-y-0.5"
+                  >
+                    <Plus className="h-4 w-4" /> New study set
+                  </button>
+                </div>
+
+                {studySets.length ? (
+                  <StudySetGrid
+                    sets={studySets}
+                    onOpen={(id) => navigate(`/set/${id}`)}
+                  />
+                ) : (
+                  <div className="rounded-[22px] border border-[#17201d]/10 bg-white px-6 py-16 text-center">
+                    <FoxMascot mood="idle" size={90} className="mx-auto" />
+                    <h2 className="mt-4 text-xl font-extrabold">
+                      No study sets yet
+                    </h2>
+                    <p className="mx-auto mt-2 max-w-[320px] text-sm text-[#68736c]">
+                      Paste your first set of notes and I&apos;ll turn them into
+                      something you can actually study from.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setView("create")}
+                      className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#d8f36a] px-4 py-3 text-sm font-bold"
+                    >
+                      <Plus className="h-4 w-4" /> Create your first set
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* LIBRARY VIEW */}
+            {view === "library" && (
+              <>
+                <div className="relative mb-6">
+                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#87908a]" />
+                  <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search the library..."
+                    className="h-12 w-full rounded-xl border border-[#17201d]/15 bg-white pl-11 pr-4 text-sm outline-none focus:border-[#17201d]/35 focus:ring-2 focus:ring-[#d8f36a]"
+                  />
+                </div>
+                <ResourceGrid
+                  items={filteredItems}
+                  onOpen={(id) => navigate(`/library/${id}`)}
+                />
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
 
-function ResourceGrid({ items, onOpen }: { items: LearningItem[]; onOpen: (id: string) => void }) {
-  return <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{items.map((item, index) => { const Icon = formatIcons[item.format]; return <motion.button type="button" key={item.id} onClick={() => onOpen(item.id)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }} className="group flex min-h-[235px] flex-col rounded-[22px] border border-[#17201d]/10 bg-white p-5 text-left transition-all hover:-translate-y-1 hover:border-[#17201d]/25 hover:shadow-[0_12px_24px_rgba(23,32,29,0.06)]"><div className="flex items-start justify-between"><span className={`flex h-10 w-10 items-center justify-center rounded-xl ${accentClasses[item.accent]}`}><Icon className="h-5 w-5" /></span><span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#87908a]">{item.format}</span></div><div className="mt-auto"><p className="text-xs font-bold text-[#ef5f47]">{item.category}</p><h3 className="mt-2 text-lg font-extrabold leading-[1.08] tracking-[-0.03em]">{item.title}</h3><p className="mt-2 line-clamp-2 text-sm leading-5 text-[#68736c]">{item.description}</p><div className="mt-4 flex items-center justify-between text-xs font-bold text-[#87908a]"><span>{item.duration}</span><ArrowRight className="h-4 w-4 text-[#ef5f47] transition-transform group-hover:translate-x-1" /></div></div></motion.button>; })}</div>;
+function StudySetGrid({
+  sets,
+  onOpen,
+}: {
+  sets: Array<{
+    _id: string;
+    title: string;
+    createdAt: number;
+    sections: unknown[];
+    flashcards: unknown[];
+    quiz: unknown[];
+    matching: { pairs: unknown[] };
+  }>;
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {sets.map((set, index) => (
+        <motion.button
+          type="button"
+          key={set._id}
+          onClick={() => onOpen(set._id)}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.04 }}
+          className="group flex min-h-[210px] flex-col rounded-[22px] border border-[#17201d]/10 bg-white p-5 text-left transition-all hover:-translate-y-1 hover:border-[#17201d]/25 hover:shadow-[0_12px_24px_rgba(23,32,29,0.06)]"
+        >
+          <div className="flex items-start justify-between">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#9eb8ff]">
+              <Brain className="h-5 w-5" />
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#87908a]">
+              {formatDate(set.createdAt)}
+            </span>
+          </div>
+
+          <div className="mt-auto">
+            <h3 className="mt-4 line-clamp-2 text-lg font-extrabold leading-[1.08] tracking-[-0.03em]">
+              {set.title}
+            </h3>
+
+            <div className="mt-3 flex flex-wrap gap-1.5 text-[10px] font-bold text-[#68736c]">
+              <span className="rounded-full border border-[#17201d]/10 px-2 py-1">
+                {set.sections.length} sections
+              </span>
+              <span className="rounded-full border border-[#17201d]/10 px-2 py-1">
+                {set.flashcards.length} cards
+              </span>
+              <span className="rounded-full border border-[#17201d]/10 px-2 py-1">
+                {set.quiz.length} questions
+              </span>
+              <span className="rounded-full border border-[#17201d]/10 px-2 py-1">
+                {set.matching.pairs.length} pairs
+              </span>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between text-xs font-bold text-[#87908a]">
+              <span>Open study set</span>
+              <ArrowRight className="h-4 w-4 text-[#ef5f47] transition-transform group-hover:translate-x-1" />
+            </div>
+          </div>
+        </motion.button>
+      ))}
+    </div>
+  );
+}
+
+function ResourceGrid({
+  items,
+  onOpen,
+}: {
+  items: LearningItem[];
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {items.map((item, index) => {
+        const Icon = formatIcons[item.format];
+        return (
+          <motion.button
+            type="button"
+            key={item.id}
+            onClick={() => onOpen(item.id)}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.04 }}
+            className="group flex min-h-[235px] flex-col rounded-[22px] border border-[#17201d]/10 bg-white p-5 text-left transition-all hover:-translate-y-1 hover:border-[#17201d]/25 hover:shadow-[0_12px_24px_rgba(23,32,29,0.06)]"
+          >
+            <div className="flex items-start justify-between">
+              <span
+                className={`flex h-10 w-10 items-center justify-center rounded-xl ${accentClasses[item.accent]}`}
+              >
+                <Icon className="h-5 w-5" />
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#87908a]">
+                {item.format}
+              </span>
+            </div>
+            <div className="mt-auto">
+              <p className="text-xs font-bold text-[#ef5f47]">
+                {item.category}
+              </p>
+              <h3 className="mt-2 text-lg font-extrabold leading-[1.08] tracking-[-0.03em]">
+                {item.title}
+              </h3>
+              <p className="mt-2 line-clamp-2 text-sm leading-5 text-[#68736c]">
+                {item.description}
+              </p>
+              <div className="mt-4 flex items-center justify-between text-xs font-bold text-[#87908a]">
+                <span className="flex items-center gap-1.5">
+                  <Link2 className="h-3 w-3" />
+                  {item.duration}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <ListChecks className="h-3.5 w-3.5" />
+                  Preview
+                  <ArrowRight className="h-4 w-4 text-[#ef5f47] transition-transform group-hover:translate-x-1" />
+                </span>
+              </div>
+            </div>
+          </motion.button>
+        );
+      })}
+    </div>
+  );
 }

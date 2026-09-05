@@ -1,10 +1,10 @@
-import { action, internalMutation, query } from "./_generated/server";
+"use node";
+
+import { action } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
-
-const MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions";
-const MISTRAL_MODEL = "mistral-small-latest";
+import { vly } from "../lib/vly-integrations";
 
 const GENERATION_PROMPT = `You are Notefox, a friendly study assistant that turns messy student notes into clear, memorable study materials.
 
@@ -80,14 +80,6 @@ export const generateStudyMaterials = action({
       throw new Error("You need to be signed in to create study materials.");
     }
 
-    const apiKey = process.env.MISTRAL_API_KEY;
-
-    if (!apiKey) {
-      throw new Error(
-        "MISTRAL_API_KEY is not configured. Add it in the Keys/API keys settings.",
-      );
-    }
-
     const trimmedNotes = args.notes.trim();
 
     if (trimmedNotes.length < 40) {
@@ -96,38 +88,28 @@ export const generateStudyMaterials = action({
       );
     }
 
-    const response = await fetch(MISTRAL_API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MISTRAL_MODEL,
-        messages: [
-          { role: "system", content: GENERATION_PROMPT },
-          {
-            role: "user",
-            content: `Here are my notes. Create the study materials:\n\n${trimmedNotes.slice(0, 12000)}`,
-          },
-        ],
-        temperature: 0.4,
-        response_format: { type: "json_object" },
-      }),
+    const completion = await vly.ai.completion({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: GENERATION_PROMPT },
+        {
+          role: "user",
+          content: `Here are my notes. Create the study materials:\n\n${trimmedNotes.slice(0, 12000)}`,
+        },
+      ],
+      temperature: 0.4,
+      maxTokens: 4000,
     });
 
-    if (!response.ok) {
-      const detail = await response.text().catch(() => "");
+    if (!completion.success || !completion.data) {
       throw new Error(
-        `The AI service returned an error (${response.status}). ${detail.slice(0, 200)}`,
+        completion.error
+          ? `The AI service returned an error: ${completion.error}`
+          : "The AI service returned an unknown error. Try again.",
       );
     }
 
-    const payload = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-
-    const content = payload.choices?.[0]?.message?.content;
+    const content = completion.data.choices?.[0]?.message?.content;
 
     if (!content) {
       throw new Error("The AI returned an empty response. Try again.");
@@ -149,7 +131,7 @@ export const generateStudyMaterials = action({
     }
 
     const studySetId: string = await ctx.runMutation(
-      internal.studyMaterials.saveStudySet,
+      internal.studySets.saveStudySet,
       {
         userId,
         title: String(material.title).slice(0, 120),
@@ -186,86 +168,5 @@ export const generateStudyMaterials = action({
     );
 
     return studySetId;
-  },
-});
-
-export const saveStudySet = internalMutation({
-  args: {
-    userId: v.string(),
-    title: v.string(),
-    sourceNotes: v.string(),
-    sections: v.array(
-      v.object({
-        heading: v.string(),
-        body: v.string(),
-        keyTerms: v.array(
-          v.object({ term: v.string(), definition: v.string() }),
-        ),
-      }),
-    ),
-    flashcards: v.array(v.object({ front: v.string(), back: v.string() })),
-    quiz: v.array(
-      v.object({
-        question: v.string(),
-        options: v.array(v.string()),
-        correctIndex: v.number(),
-        explanation: v.string(),
-      }),
-    ),
-    matching: v.object({
-      pairs: v.array(
-        v.object({ term: v.string(), definition: v.string() }),
-      ),
-    }),
-  },
-  handler: async (ctx, args) => {
-    return await ctx.db.insert("studyMaterials", {
-      userId: args.userId,
-      title: args.title,
-      sourceNotes: args.sourceNotes,
-      sections: args.sections,
-      flashcards: args.flashcards,
-      quiz: args.quiz,
-      matching: args.matching,
-      createdAt: Date.now(),
-    });
-  },
-});
-
-export const listMyStudySets = query({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-
-    if (userId === null) {
-      return [];
-    }
-
-    return await ctx.db
-      .query("studyMaterials")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .order("desc")
-      .collect();
-  },
-});
-
-export const getStudySet = query({
-  args: {
-    setId: v.id("studyMaterials"),
-  },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-
-    if (userId === null) {
-      return null;
-    }
-
-    const studySet = await ctx.db.get(args.setId);
-
-    if (!studySet || studySet.userId !== userId) {
-      return null;
-    }
-
-    return studySet;
   },
 });
