@@ -38,6 +38,47 @@ const schema = defineSchema(
     //   ...
     //   // table fields
     // }).index("by_field", ["field"])
+
+    studyMaterials: defineTable({
+      userId: v.string(),
+      title: v.string(),
+      sourceNotes: v.string(),
+      sections: v.array(
+        v.object({
+          heading: v.string(),
+          body: v.string(),
+          keyTerms: v.array(
+            v.object({
+              term: v.string(),
+              definition: v.string(),
+            }),
+          ),
+        }),
+      ),
+      flashcards: v.array(
+        v.object({
+          front: v.string(),
+          back: v.string(),
+        }),
+      ),
+      quiz: v.array(
+        v.object({
+          question: v.string(),
+          options: v.array(v.string()),
+          correctIndex: v.number(),
+          explanation: v.string(),
+        }),
+      ),
+      matching: v.object({
+        pairs: v.array(
+          v.object({
+            term: v.string(),
+            definition: v.string(),
+          }),
+        ),
+      }),
+      createdAt: v.number(),
+    }).index("by_user", ["userId"]),
   },
   {
     schemaValidation: false,
