@@ -4,7 +4,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { InstrumentationProvider } from "@/instrumentation.tsx";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
-import { StrictMode, useEffect, lazy, Suspense } from "react";
+import { StrictMode, useEffect, lazy, Suspense, Component, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import {
   HashRouter,
@@ -25,6 +25,8 @@ const VlyToolbar = lazy(() =>
 const Landing = lazy(() => import("./pages/Landing.tsx"));
 const AuthPage = lazy(() => import("./pages/Auth.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
+const CreateMaterial = lazy(() => import("./pages/CreateMaterial.tsx"));
+const MaterialDetail = lazy(() => import("./pages/MaterialDetail.tsx"));
 const Library = lazy(() => import("./pages/Library.tsx"));
 const LibraryDetail = lazy(() => import("./pages/LibraryDetail.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
@@ -35,6 +37,52 @@ function RouteLoading() {
       <div className="animate-pulse text-muted-foreground">Loading...</div>
     </div>
   );
+}
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  error: Error | null;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { error: null };
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: unknown) {
+    console.error("ErrorBoundary caught:", error, info);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-[#f7f8f5] px-5 text-center text-[#17201d]">
+          <div className="max-w-md">
+            <h1 className="text-2xl font-extrabold">Something went wrong</h1>
+            <p className="mt-2 text-sm text-[#68736c]">
+              The page failed to load. Try refreshing.
+            </p>
+            <p className="mt-4 break-words rounded-xl bg-white px-4 py-3 text-left font-mono text-xs text-[#ef5f47]">
+              {this.state.error.message}
+            </p>
+            <button
+              type="button"
+              onClick={() => this.setState({ error: null })}
+              className="mt-5 rounded-xl bg-[#17201d] px-4 py-3 text-sm font-bold text-white"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 const isVlyHost =
@@ -92,9 +140,9 @@ function RouteSyncer() {
     window.parent.postMessage(
       {
         type: "iframe-route-change",
-        path: location.pathname,
+        path: location.pathname + location.hash,
       },
-      "*",
+      window.location.origin,
     );
   }, [location.pathname]);
 
@@ -137,6 +185,24 @@ function AppRoutes() {
           </RequireAuth>
         }
       />
+
+      <Route
+        path="/dashboard/new"
+        element={
+          <RequireAuth>
+            <CreateMaterial />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/dashboard/materials/:id"
+        element={
+          <RequireAuth>
+            <MaterialDetail />
+          </RequireAuth>
+        }
+      />
     </>
   ) : (
     <>
@@ -168,6 +234,7 @@ createRoot(document.getElementById("root")!).render(
       <HashRouter>
         <RouteSyncer />
 
+        <ErrorBoundary>
         <Suspense fallback={<RouteLoading />}>
           {convex ? (
             <ConvexAuthProvider client={convex}>
@@ -177,6 +244,7 @@ createRoot(document.getElementById("root")!).render(
             <AppRoutes />
           )}
         </Suspense>
+        </ErrorBoundary>
 
         <Toaster />
       </HashRouter>

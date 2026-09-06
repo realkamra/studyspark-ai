@@ -24,6 +24,9 @@ const formatIcons: Record<LearningFormat, typeof FileText> = {
   Flashcards: Layers3,
 };
 
+// Design tokens (matching index.css)
+const TRANSITION = "150ms cubic-bezier(0.23, 1, 0.32, 1)";
+
 const accentClasses: Record<LearningItem["accent"], string> = {
   lime: "bg-[#d8f36a]",
   coral: "bg-[#ff967f]",
@@ -50,7 +53,7 @@ export default function Library() {
       <header className="border-b border-[#17201d]/10 bg-white">
         <div className="mx-auto flex max-w-[1240px] items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
           <button type="button" onClick={() => navigate("/")} className="flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#17201d] focus-visible:ring-offset-4"><img src={logo} alt="Notefox mark" className="h-8 w-8 rounded-[9px] bg-[#17201d]" /><span className="text-[17px] font-extrabold tracking-[-0.03em]">notefox<span className="text-[#ef5f47]">.</span></span></button>
-          <div className="flex items-center gap-2 sm:gap-4"><button type="button" onClick={() => navigate("/auth?returnTo=/dashboard")} className="px-2 py-2 text-sm font-bold text-[#68736c] hover:text-[#17201d]">Log in</button><button type="button" onClick={() => navigate("/auth?returnTo=/dashboard")} className="inline-flex items-center gap-2 rounded-xl bg-[#17201d] px-3.5 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-0.5 sm:px-4">Create account <ArrowRight className="h-4 w-4" /></button></div>
+          <div className="flex items-center gap-2 sm:gap-4"><button type="button" onClick={() => navigate("/auth?returnTo=/dashboard")} className="px-2 py-2 text-sm font-bold text-[#68736c] hover:text-[#17201d] pressable" style={{ transition: TRANSITION }}>Log in</button><button type="button" onClick={() => navigate("/auth?returnTo=/dashboard")} className="inline-flex items-center gap-2 rounded-xl bg-[#17201d] px-3.5 py-2.5 text-sm font-bold text-white pressable" style={{ transition: TRANSITION }}>Create account <ArrowRight className="h-4 w-4" /></button></div>
         </div>
       </header>
       <section className="mx-auto max-w-[1240px] px-5 pb-10 pt-12 sm:px-8 lg:px-10 lg:pb-14 lg:pt-16">

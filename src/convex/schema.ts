@@ -32,6 +32,55 @@ const schema = defineSchema(
       role: v.optional(roleValidator), // role of the user. do not remove
     }).index("email", ["email"]), // index for the email. do not remove or modify
 
+    // a user's study material and the kit the AI generates from it
+    materials: defineTable({
+      userId: v.id("users"), // owner. do not remove
+      title: v.string(), // display title of the material
+      sourceType: v.union(v.literal("text"), v.literal("file")), // how the source was provided
+      sourceText: v.optional(v.string()), // pasted text path
+      sourceFileId: v.optional(v.id("_storage")), // uploaded file path
+      sourceFileName: v.optional(v.string()),
+      accent: v.optional(v.string()), // "lime" | "coral" | "blue"
+      generationStatus: v.union(
+        v.literal("queued"),
+        v.literal("generating"),
+        v.literal("ready"),
+        v.literal("error"),
+      ), // state of the AI study-kit generation
+      errorMessage: v.optional(v.string()), // set when generation fails
+      generatedAt: v.optional(v.number()), // epoch ms when the kit finished
+      kit: v.optional(v.any()), // StudyKit JSON blob (typed via a cast in the action)
+    }).index("by_userId", ["userId"]),
+
+    // per-card flashcard learning state (got it / still learning / retry)
+    studyProgress: defineTable({
+      userId: v.id("users"),
+      materialId: v.id("materials"),
+      cardId: v.string(), // "card-0", ...
+      status: v.union(v.literal("learning"), v.literal("gotit"), v.literal("retry")),
+      updatedAt: v.number(),
+    }).index("by_user_material", ["userId", "materialId"]),
+
+    // full study kits, ready for the AI action to write to
+    quizAttempts: defineTable({
+      userId: v.id("users"),
+      materialId: v.id("materials"),
+      score: v.number(),
+      total: v.number(),
+      reviewTopics: v.array(v.string()),
+      takenAt: v.number(),
+    }).index("by_user_material", ["userId", "materialId"]),
+
+    // game runs, so best scores/streaks persist per material
+    gameRuns: defineTable({
+      userId: v.id("users"),
+      materialId: v.id("materials"),
+      gameType: v.union(v.literal("match"), v.literal("speed"), v.literal("sort")),
+      score: v.number(),
+      bestStreak: v.number(),
+      completedAt: v.number(),
+    }).index("by_user_material", ["userId", "materialId"]),
+
     // add other tables here
 
     // tableName: defineTable({

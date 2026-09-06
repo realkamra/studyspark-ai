@@ -8,9 +8,13 @@
  * @module
  */
 
+import type * as ai_generate from "../ai/generate.js";
+import type * as ai_parse from "../ai/parse.js";
+import type * as ai_prompts from "../ai/prompts.js";
 import type * as auth from "../auth.js";
 import type * as auth_emailOtp from "../auth/emailOtp.js";
 import type * as http from "../http.js";
+import type * as materials from "../materials.js";
 import type * as users from "../users.js";
 
 import type {
@@ -20,9 +24,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "ai/generate": typeof ai_generate;
+  "ai/parse": typeof ai_parse;
+  "ai/prompts": typeof ai_prompts;
   auth: typeof auth;
   "auth/emailOtp": typeof auth_emailOtp;
   http: typeof http;
+  materials: typeof materials;
   users: typeof users;
 }>;
 
