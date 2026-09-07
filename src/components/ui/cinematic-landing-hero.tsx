@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -244,6 +244,18 @@ export function CinematicHero({
   const mainCardRef = useRef<HTMLDivElement>(null);
   const mockupRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
+  const r = !!reduceMotion;
+
+  // StrictMode double-mounts in dev, which makes Framer Motion drop the
+  // `initial` hidden state (elements mount already at their final opacity).
+  // Gate every entrance behind `mounted`: while unmounted the animate target
+  // is the hidden state, and only a real state change (mounted -> true) starts
+  // the animation. This survives the remount.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   // Simple mouse parallax for the card sheen (no GSAP)
   useEffect(() => {
@@ -289,7 +301,7 @@ export function CinematicHero({
   } as const;
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: r ? 0 : 20 },
     visible: {
       opacity: 1,
       y: 0,
@@ -301,7 +313,7 @@ export function CinematicHero({
   } as const;
 
   const headlineVariants = {
-    hidden: { opacity: 0, y: 30, scale: 0.95 },
+    hidden: { opacity: 0, y: r ? 0 : 30, scale: r ? 1 : 0.95 },
     visible: {
       opacity: 1,
       y: 0,
@@ -333,8 +345,8 @@ export function CinematicHero({
       {/* Headline section - simple entrance */}
       <motion.div
         className="hero-text-wrapper absolute z-10 flex w-screen flex-col items-center justify-center px-4 text-center"
-        initial={reduceMotion ? false : "hidden"}
-        animate="visible"
+        initial="hidden"
+        animate={mounted ? "visible" : "hidden"}
         variants={containerVariants}
         style={{ transformStyle: "preserve-3d" }}
       >
@@ -356,9 +368,9 @@ export function CinematicHero({
       {/* Scroll hint - appears after content */}
       <motion.div
         className="scroll-hint pointer-events-none fixed bottom-5 left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-1 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/70"
-        initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.2, duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+        initial={{ opacity: 0, y: r ? 0 : 8 }}
+        animate={mounted ? { opacity: 1, y: 0 } : { opacity: 0, y: r ? 0 : 8 }}
+        transition={{ delay: mounted ? 1.2 : 0, duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
       >
         <span>Scroll down to keep exploring</span>
         <span className="hint-arrow text-lg leading-none text-[#d8f36a]">↓</span>
@@ -368,16 +380,16 @@ export function CinematicHero({
       <motion.div
         ref={mainCardRef}
         className="pointer-events-auto relative flex h-[92vh] w-[92vw] max-h-[85vh] max-w-[85vw] items-center justify-center overflow-hidden rounded-[32px] md:h-[85vh] md:w-[85vw] md:rounded-[40px] premium-depth-card"
-        initial={reduceMotion ? false : { opacity: 0, y: 40, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1], delay: 0.2 }}
+        initial={r ? { opacity: 0 } : { opacity: 0, y: 40, scale: 0.98 }}
+        animate={mounted ? { opacity: 1, y: 0, scale: 1 } : r ? { opacity: 0 } : { opacity: 0, y: 40, scale: 0.98 }}
+        transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1], delay: mounted ? 0.2 : 0 }}
       >
         <div className="card-sheen" aria-hidden="true" />
 
         <motion.div
           className="relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col items-center justify-evenly px-4 py-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:px-12 lg:py-0"
-          initial={reduceMotion ? false : "hidden"}
-          animate="visible"
+          initial="hidden"
+          animate={mounted ? "visible" : "hidden"}
           variants={containerVariants}
         >
           {/* Brand name on right */}
@@ -417,9 +429,9 @@ export function CinematicHero({
                   <div className="relative flex h-full w-full flex-col px-5 pb-8 pt-12">
                     <motion.div
                       className="phone-widget mb-8 flex items-center justify-between"
-                      initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.4, ease: [0.23, 1, 0.32, 1] }}
+                      initial={r ? { opacity: 0 } : { opacity: 0, y: 20 }}
+                      animate={mounted ? { opacity: 1, y: 0 } : r ? { opacity: 0 } : { opacity: 0, y: 20 }}
+                      transition={{ duration: 0.5, delay: mounted ? 0.4 : 0, ease: [0.23, 1, 0.32, 1] }}
                     >
                       <div className="flex flex-col">
                         <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">Today</span>
@@ -430,9 +442,9 @@ export function CinematicHero({
 
                     <motion.div
                       className="phone-widget relative mx-auto mb-8 flex h-44 w-44 items-center justify-center drop-shadow-[0_15px_25px_rgba(0,0,0,.8)]"
-                      initial={reduceMotion ? false : { opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.6, delay: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                      initial={r ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+                      animate={mounted ? { opacity: 1, scale: 1 } : r ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.6, delay: mounted ? 0.5 : 0, ease: [0.23, 1, 0.32, 1] }}
                     >
                       <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
                         <circle cx="88" cy="88" r="64" fill="none" stroke="rgba(255,255,255,.03)" strokeWidth="12" />
@@ -444,19 +456,19 @@ export function CinematicHero({
                           fill="none"
                           stroke="#d8f36a"
                           strokeWidth="12"
-                          initial={reduceMotion ? false : { pathLength: 0 }}
-                          animate={{ pathLength: metricValue / 100 }}
-                          transition={{ duration: 1.2, delay: 0.7, ease: [0.77, 0, 0.175, 1] }}
+                          initial={{ pathLength: 0 }}
+                          animate={{ pathLength: mounted ? metricValue / 100 : 0 }}
+                          transition={{ duration: 1.2, delay: mounted ? 0.7 : 0, ease: [0.77, 0, 0.175, 1] }}
                         />
                       </svg>
                       <div className="z-10 flex flex-col items-center text-center">
                         <motion.span
                           className="counter-val text-4xl font-extrabold tracking-tighter text-white"
-                          initial={reduceMotion ? false : { opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 1.2, delay: 0.7 }}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: mounted ? 1 : 0 }}
+                          transition={{ duration: 1.2, delay: mounted ? 0.7 : 0 }}
                         >
-                          {reduceMotion ? metricValue : 0}
+                          {r ? metricValue : 0}
                         </motion.span>
                         <span className="mt-0.5 text-[8px] font-bold uppercase tracking-[.1em] text-[#d8f36a]/60">
                           {metricLabel}
@@ -466,8 +478,8 @@ export function CinematicHero({
 
                     <motion.div
                       className="space-y-3"
-                      initial={reduceMotion ? false : "hidden"}
-                      animate="visible"
+                      initial="hidden"
+                      animate={mounted ? "visible" : "hidden"}
                       variants={containerVariants}
                     >
                       <motion.div
@@ -499,9 +511,9 @@ export function CinematicHero({
 
                 <motion.div
                   className="floating-badge floating-ui-badge absolute left-[-15px] top-6 z-30 flex items-center gap-3 rounded-xl p-3 lg:left-[-80px] lg:top-12 lg:gap-4 lg:rounded-2xl lg:p-4"
-                  initial={reduceMotion ? false : { opacity: 0, y: 30, scale: 0.9 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.8, ease: [0.23, 1, 0.32, 1] }}
+                  initial={r ? { opacity: 0 } : { opacity: 0, y: 30, scale: 0.9 }}
+                  animate={mounted ? { opacity: 1, y: 0, scale: 1 } : r ? { opacity: 0 } : { opacity: 0, y: 30, scale: 0.9 }}
+                  transition={{ duration: 0.5, delay: mounted ? 0.8 : 0, ease: [0.23, 1, 0.32, 1] }}
                 >
                   <div className="flex h-8 w-8 items-center justify-center rounded-full border border-blue-400/30 bg-blue-500/20 lg:h-10 lg:w-10">
                     <span className="text-base lg:text-xl" aria-hidden="true">✦</span>
@@ -514,9 +526,9 @@ export function CinematicHero({
 
                 <motion.div
                   className="floating-badge floating-ui-badge absolute bottom-12 right-[-15px] z-30 flex items-center gap-3 rounded-xl p-3 lg:bottom-20 lg:right-[-80px] lg:gap-4 lg:rounded-2xl lg:p-4"
-                  initial={reduceMotion ? false : { opacity: 0, y: 30, scale: 0.9 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.9, ease: [0.23, 1, 0.32, 1] }}
+                  initial={r ? { opacity: 0 } : { opacity: 0, y: 30, scale: 0.9 }}
+                  animate={mounted ? { opacity: 1, y: 0, scale: 1 } : r ? { opacity: 0 } : { opacity: 0, y: 30, scale: 0.9 }}
+                  transition={{ duration: 0.5, delay: mounted ? 0.9 : 0, ease: [0.23, 1, 0.32, 1] }}
                 >
                   <div className="flex h-8 w-8 items-center justify-center rounded-full border border-indigo-400/30 bg-indigo-500/20 lg:h-10 lg:w-10">
                     <span className="text-base lg:text-lg" aria-hidden="true">✓</span>
@@ -548,9 +560,9 @@ export function CinematicHero({
       {/* CTA section at bottom */}
       <motion.div
         className="cta-wrapper pointer-events-auto absolute bottom-0 z-30 flex w-screen flex-col items-center justify-center px-4 pb-8 text-center"
-        initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 1.1, ease: [0.23, 1, 0.32, 1] }}
+        initial={r ? { opacity: 0 } : { opacity: 0, y: 20 }}
+        animate={mounted ? { opacity: 1, y: 0 } : r ? { opacity: 0 } : { opacity: 0, y: 20 }}
+        transition={{ duration: 0.5, delay: mounted ? 1.1 : 0, ease: [0.23, 1, 0.32, 1] }}
       >
         <h2 className="text-card-silver-matte mb-6 text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl">
           {ctaHeading}
