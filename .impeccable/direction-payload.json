@@ -1,0 +1,92 @@
+{
+  "title": "Choose the visual world",
+  "question": "Choose the visual world for the clarity-from-chaos reset.",
+  "options": [
+    {
+      "id": "assigned-workbench",
+      "label": "Clarity Workbench",
+      "kicker": "THE ROLL",
+      "lineage": "student annotation desks, index systems, and marked-up working notes",
+      "thesis": "The study kit is a work surface: messy source enters at the left, the next useful move is marked at the right.",
+      "palette": ["#e9ece7", "#10221d", "#d95d3d", "#c9d1cc"],
+      "materials": ["mineral paper", "graphite rules", "acetate signal tabs", "printed index strips"],
+      "viewport": "A left-aligned promise meets a live clarity board: source fragments, a guide outline, one flashcard, and a practice prompt connected by a single signal rail.",
+      "risk": "Reads like stationery if the transformation remains decorative instead of showing the next study action.",
+      "raised": [
+        {
+          "from": "crouwel-grid-specimen",
+          "raise": "The grid is a functional alignment armature shared by source fragments, guide sections, and answer states, not background decoration."
+        },
+        {
+          "from": "operate-a-cutting-bench-select-rail",
+          "raise": "Progress is a persistent mark on a sequence, so completed, current, and deferred study work never vanish."
+        },
+        {
+          "from": "tanaka-plane-portrait",
+          "raise": "Flat planes and quiet negative space make the one signal action legible before ornament enters."
+        }
+      ],
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          {"label": "brand rail", "x": 0, "y": 0, "w": 12, "h": 1},
+          {"label": "hero promise", "x": 0, "y": 1, "w": 5, "h": 5, "accent": true},
+          {"label": "clarity board", "x": 6, "y": 1, "w": 6, "h": 6, "accent": true},
+          {"label": "mechanism sequence", "x": 0, "y": 7, "w": 12, "h": 3}
+        ]
+      }
+    },
+    {
+      "id": "challenger-grid",
+      "label": "Cell-built Study Sheet",
+      "verdict": "competitive",
+      "lineage": "Wim Crouwel gridded type specimens",
+      "thesis": "Understanding is assembled cell by cell, and the visible grid proves how dense notes become a navigable kit.",
+      "palette": ["#f4f6f3", "#111b19", "#d95d3d", "#b8c5bf"],
+      "materials": ["construction grid", "hairline rules", "stark signal plane"],
+      "viewport": "A large cell-built statement anchors the source-to-kit sequence; selecting a cell reveals the learning unit it supports.",
+      "case": "Strong product clarity and a credible study grammar; it holds one axis but is less immediately student-identifying than a workbench.",
+      "risk": "Becomes a typographic exercise if the grid does not map to real study units.",
+      "kept": "Keep the functional grid as the shared alignment system."
+    },
+    {
+      "id": "challenger-rail",
+      "label": "Study Edit Rail",
+      "verdict": "competitive",
+      "lineage": "film cutting benches and punched work prints",
+      "thesis": "A study session is an editable sequence: source, guide, recall, and test stay reachable on one rail.",
+      "palette": ["#0f1413", "#e9ece7", "#d95d3d"],
+      "materials": ["punched index rail", "grease marks", "folded signal flags"],
+      "viewport": "The first view is a horizontal study sequence with the current step flagged and deferred material hanging below for return.",
+      "case": "Excellent state vocabulary and strong clarity for the workspace; it holds one axis but can feel too tool-like for a first-time student landing.",
+      "risk": "Scrubbing and rail metaphors could make a simple study action feel like editing software.",
+      "kept": "Keep state as a mark, not a hue, across generation and review states."
+    },
+    {
+      "id": "challenger-planes",
+      "label": "Plane-by-Plane Recall",
+      "verdict": "declined",
+      "lineage": "Ikko Tanaka flat geometric posters",
+      "thesis": "A topic becomes recognizable when only the essential planes remain.",
+      "palette": ["#eef0ed", "#10221d", "#d95d3d", "#7c8d86"],
+      "materials": ["flat color planes", "quiet grid", "no outlines"],
+      "viewport": "A few responsive planes compose the learning path, with each plane naming the role it plays.",
+      "case": "Clear visual restraint, but the metaphor does not explain the student's source-to-study workflow quickly enough.",
+      "risk": "Can reduce real study content to an abstract poster.",
+      "kept": "Keep its discipline of flat, non-competing planes in the workbench's clarity board."
+    }
+  ],
+  "reroll": {"registers": ["safer", "bolder"]},
+  "buildPath": {"value": "code", "toggle": false},
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "A conventional centered SaaS hero with a screenshot, feature cards, and a single signup button.",
+    "palette": ["#ffffff", "#111827", "#2563eb"],
+    "materials": ["clean grid", "product screenshot", "feature cards"],
+    "viewport": "The expected marketing arrangement, executed cleanly.",
+    "risk": "The product becomes interchangeable and the clarity mechanism stays implicit."
+  },
+  "steer": true
+}
