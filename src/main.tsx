@@ -30,12 +30,21 @@ const MaterialDetail = lazy(() => import("./pages/MaterialDetail.tsx"));
 const Library = lazy(() => import("./pages/Library.tsx"));
 const LibraryDetail = lazy(() => import("./pages/LibraryDetail.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+const Demo = lazy(() => import("./demo.tsx"));
+const SkyboundDemo = lazy(() => import("./pages/SkyboundDemoPage.tsx"));
 
 function RouteLoading() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="animate-pulse text-muted-foreground">Loading...</div>
-    </div>
+    <main
+      className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <div className="flex flex-col items-center gap-3 text-center">
+        <div className="size-2 rounded-full bg-primary" aria-hidden="true" />
+        <p className="text-sm text-muted-foreground">Loading your workspace…</p>
+      </div>
+    </main>
   );
 }
 
@@ -61,24 +70,27 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   render() {
     if (this.state.error) {
       return (
-        <div className="flex min-h-screen items-center justify-center bg-[#f7f8f5] px-5 text-center text-[#17201d]">
-          <div className="max-w-md">
-            <h1 className="text-2xl font-extrabold">Something went wrong</h1>
-            <p className="mt-2 text-sm text-[#68736c]">
-              The page failed to load. Try refreshing.
+        <main className="flex min-h-screen items-center justify-center bg-background px-6 text-center text-foreground">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-7 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              Unexpected pause
             </p>
-            <p className="mt-4 break-words rounded-xl bg-white px-4 py-3 text-left font-mono text-xs text-[#ef5f47]">
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight">Something went wrong</h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              The page failed to load. Try refreshing this view.
+            </p>
+            <p className="mt-5 break-words rounded-lg border border-border bg-muted/60 px-4 py-3 text-left font-mono text-xs text-muted-foreground">
               {this.state.error.message}
             </p>
             <button
               type="button"
               onClick={() => this.setState({ error: null })}
-              className="mt-5 rounded-xl bg-[#17201d] px-4 py-3 text-sm font-bold text-white"
+              className="mt-6 inline-flex min-h-10 items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[transform,background-color,box-shadow] duration-150 ease-[var(--ease-out)] hover:bg-primary/90 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               Try again
             </button>
           </div>
-        </div>
+        </main>
       );
     }
     return this.props.children;
@@ -96,26 +108,26 @@ function StaticPreviewNotice() {
   const navigate = useNavigate();
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f7f8f5] px-5 text-center text-[#17201d]">
-      <div className="max-w-md">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#ef5f47]">
+    <main className="flex min-h-screen items-center justify-center bg-background px-6 text-center text-foreground">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-7 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
           GitHub Pages preview
         </p>
 
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight">
           The visual preview is ready.
         </h1>
 
-        <p className="mt-3 text-sm leading-6 text-[#68736c]">
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">
           Sign-in and the workspace are available when the GitHub repository has
           a VITE_CONVEX_URL variable configured.
         </p>
 
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
+        <div className="mt-7 flex flex-wrap justify-center gap-3">
           <button
             type="button"
             onClick={() => navigate("/")}
-            className="rounded-xl bg-[#17201d] px-4 py-3 text-sm font-bold text-white"
+            className="min-h-10 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[transform,background-color,box-shadow] duration-150 ease-[var(--ease-out)] hover:bg-primary/90 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Back home
           </button>
@@ -123,7 +135,7 @@ function StaticPreviewNotice() {
           <button
             type="button"
             onClick={() => navigate("/library")}
-            className="rounded-xl border border-[#17201d]/15 bg-white px-4 py-3 text-sm font-bold"
+            className="min-h-10 rounded-lg border border-border bg-background px-5 py-2.5 text-sm font-semibold text-foreground transition-[transform,background-color,border-color] duration-150 ease-[var(--ease-out)] hover:bg-accent active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Explore library
           </button>
@@ -174,7 +186,7 @@ function AppRoutes() {
     <>
       <Route
         path="/auth"
-        element={<AuthPage redirectAfterAuth="/dashboard" />}
+        element={<AuthPage />}
       />
 
       <Route
@@ -216,6 +228,8 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/library" element={<Library />} />
       <Route path="/library/:itemId" element={<LibraryDetail />} />
+      <Route path="/demo/signin" element={<Demo />} />
+      <Route path="/demo/skybound" element={<SkyboundDemo />} />
       {protectedRoutes}
       <Route path="*" element={<NotFound />} />
     </Routes>

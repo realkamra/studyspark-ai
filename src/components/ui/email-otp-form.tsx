@@ -71,8 +71,8 @@ export function EmailOtpForm({
   if (submitted) {
     return (
       <div className={cn('text-center py-8 animate-in fade-in-50', className)}>
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#d8f36a] mb-4">
-          <svg className="w-8 h-8 text-[#17201d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary mb-4">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
@@ -83,7 +83,7 @@ export function EmailOtpForm({
         <button
           type="button"
           onClick={() => setSubmitted(false)}
-          className="text-[#ef5f47] font-medium hover:underline text-sm"
+          className="text-primary font-medium hover:underline text-sm"
         >
           Change email
         </button>
@@ -94,7 +94,7 @@ export function EmailOtpForm({
   return (
     <form onSubmit={handleSubmit} className={cn('space-y-4', className)}>
       <div className="text-center mb-6">
-        <Mail className="h-12 w-12 text-[#ef5f47] mx-auto mb-3" />
+        <Mail className="h-12 w-12 text-primary mx-auto mb-3" />
         <h3 className="text-xl font-bold mb-2">Sign in with email</h3>
         <p className="text-muted-foreground text-sm">
           Enter your email and we&apos;ll send you a 6-digit code.
@@ -111,8 +111,8 @@ export function EmailOtpForm({
           onBlur={handleBlur}
           disabled={isLoading}
           className={cn(
-            'w-full pl-10 pr-4 py-3 bg-[#f7f8f5] border rounded-xl placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#d8f36a] transition-all',
-            error ? 'border-destructive' : 'border-[#17201d]/10'
+            'w-full pl-10 pr-4 py-3 bg-muted border rounded-xl placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all',
+            error ? 'border-destructive' : 'border-border'
           )}
           aria-label="Email Address"
           aria-describedby={error ? 'email-error' : undefined}
@@ -140,9 +140,9 @@ export function EmailOtpForm({
         type="submit"
         disabled={isLoading || !email.trim() || submitted}
         className={cn(
-          'w-full relative flex items-center justify-center gap-2 bg-[#17201d] text-white font-medium py-3 px-6 rounded-xl transition-all',
-          'hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(23,32,29,0.2)] focus:outline-none focus:ring-2 focus:ring-[#d8f36a]',
-          'disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none'
+          'w-full relative flex items-center justify-center gap-2 bg-primary text-primary-foreground font-medium py-3 px-6 rounded-xl transition-[background-color,box-shadow,transform,opacity] duration-[var(--duration-normal)] ease-[var(--ease-out)] pressable hover-lift',
+          'hover:shadow-[0_4px_12px_rgba(37,99,235,0.2)] focus:outline-none focus:ring-2 focus:ring-primary',
+          'disabled:opacity-50 disabled:shadow-none'
         )}
       >
         <span className="flex items-center justify-center gap-2">
@@ -159,9 +159,9 @@ export function EmailOtpForm({
 
       <p className="text-center text-xs text-muted-foreground">
         By continuing, you agree to our{' '}
-        <a href="#" className="text-[#ef5f47] hover:underline">Terms of Service</a>{' '}
+        <a href="#" className="text-primary hover:underline">Terms of Service</a>{' '}
         and{' '}
-        <a href="#" className="text-[#ef5f47] hover:underline">Privacy Policy</a>
+        <a href="#" className="text-primary hover:underline">Privacy Policy</a>
       </p>
     </form>
   );

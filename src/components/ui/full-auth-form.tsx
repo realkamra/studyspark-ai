@@ -1,14 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useId, useState, useCallback } from 'react';
 import { Mail, Lock, User, Eye, EyeOff, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-/* ============================================================
-   DESIGN TOKENS — matching src/index.css
-   ============================================================ */
-const TRANSITION = '150ms cubic-bezier(0.23, 1, 0.32, 1)';
-const PRESS_SCALE = 0.97;
 
 type AuthMode = 'login' | 'signup';
 type AuthMethod = 'password' | 'otp';
@@ -39,6 +33,11 @@ interface FormErrors {
   general?: string;
 }
 
+const inputBase =
+  'min-h-11 w-full rounded-lg border bg-background px-3 py-2.5 text-base text-foreground shadow-xs outline-none transition-[color,box-shadow,border-color] duration-150 ease-[var(--ease-out)] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-60 md:text-sm';
+
+const errorText = 'mt-1.5 text-xs font-medium text-destructive';
+
 export function FullAuthForm({
   onPasswordSubmit,
   onOtpRequest,
@@ -50,6 +49,7 @@ export function FullAuthForm({
   const [method, setMethod] = useState<AuthMethod>('password');
   const [signupStep, setSignupStep] = useState<SignupStep>('details');
   const [showPassword, setShowPassword] = useState(false);
+  const formId = useId();
 
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -62,7 +62,9 @@ export function FullAuthForm({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const [otpSent, setOtpSent] = useState(false);
-  const [verifiedEmail, setVerifiedEmail] = useState('');
+
+  const fieldId = (field: keyof FormData) => `${formId}-${field}`;
+  const errorId = (field: keyof FormData) => `${fieldId(field)}-error`;
 
   const validateField = useCallback((field: keyof FormData, value: string): string => {
     switch (field) {
@@ -74,7 +76,6 @@ export function FullAuthForm({
         if (!value) return 'Password is required';
         if (value.length < 8) return 'At least 8 characters';
         if (mode === 'signup' && method === 'password') {
-          // Check password strength
           const hasUpper = /[A-Z]/.test(value);
           const hasLower = /[a-z]/.test(value);
           const hasNumber = /\d/.test(value);
@@ -113,7 +114,8 @@ export function FullAuthForm({
   };
 
   const validateForm = (): boolean => {
-    const fieldsToCheck: (keyof FormData)[] = ['email', 'password'];
+    const fieldsToCheck: (keyof FormData)[] = ['email'];
+    if (method === 'password') fieldsToCheck.push('password');
     if (method === 'password' && mode === 'signup') {
       fieldsToCheck.push('confirmPassword');
       if (signupStep === 'details') fieldsToCheck.push('name');
@@ -146,20 +148,15 @@ export function FullAuthForm({
         if (mode === 'login') {
           await onPasswordSubmit(formData.email, formData.password);
         } else {
-          // Signup with password - check if email verified
           if (signupStep === 'details') {
-            // For signup, we need to first verify email via OTP
-            setSignupStep('verify');
             await onOtpRequest(formData.email);
+            setSignupStep('verify');
           } else {
-            // Second step: verify OTP and create account
             await onOtpVerify(formData.email, formData.otpCode);
-            // Then sign in with password
             await onPasswordSubmit(formData.email, formData.password);
           }
         }
       } else {
-        // OTP method
         if (mode === 'login') {
           if (!otpSent) {
             await onOtpRequest(formData.email);
@@ -168,12 +165,10 @@ export function FullAuthForm({
             await onOtpVerify(formData.email, formData.otpCode);
           }
         } else {
-          // Signup with OTP
           if (signupStep === 'details') {
-            setSignupStep('verify');
             await onOtpRequest(formData.email);
+            setSignupStep('verify');
           } else {
-            // Verify and complete signup (need to handle password for new account)
             await onOtpVerify(formData.email, formData.otpCode);
           }
         }
@@ -195,6 +190,9 @@ export function FullAuthForm({
 
   const handleModeChange = (newMode: AuthMode) => {
     setMode(newMode);
+    // Accounts are always created with a password + email verification,
+    // so switch back to the password method when signing up.
+    if (newMode === 'signup') setMethod('password');
     setOtpSent(false);
     setSignupStep('details');
     setErrors({});
@@ -210,276 +208,332 @@ export function FullAuthForm({
     }
   };
 
-  // Render OTP verification view
-  if ((method === 'otp' && otpSent) || (method === 'password' && mode === 'signup' && signupStep === 'verify')) {
+  const renderError = (field: keyof FormData) => (
+    errors[field] ? (
+      <p id={errorId(field)} className={errorText} role="alert">
+        {errors[field]}
+      </p>
+    ) : null
+  );
+
+  const renderPasswordToggle = () => (
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute right-2 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-[color,background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-muted hover:text-foreground active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      aria-label={showPassword ? 'Hide password' : 'Show password'}
+      aria-pressed={showPassword}
+    >
+      {showPassword ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+    </button>
+  );
+
+  const renderFieldIcon = (Icon: typeof Mail) => (
+    <Icon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+  );
+
+  const hasVerificationView = (method === 'otp' && otpSent) || (method === 'password' && mode === 'signup' && signupStep === 'verify');
+
+  if (hasVerificationView) {
+    const otpInputId = fieldId('otpCode');
+    const passwordInputId = fieldId('password');
+    const verifyTitleId = `${formId}-verify-title`;
+    const verifyDescriptionId = `${formId}-verify-description`;
+
     return (
-      <div className={cn('space-y-4 animate-in fade-in-50', className)}>
+      <form
+        id={`${formId}-verify-form`}
+        onSubmit={handleSubmit}
+        className={cn('space-y-5 animate-in', className)}
+        aria-labelledby={verifyTitleId}
+      >
         <button
           type="button"
           onClick={goBack}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-2 pressable"
-          style={{ transition: TRANSITION }}
+          className="pressable inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-muted-foreground transition-[color,transform] duration-150 ease-[var(--ease-out)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <ArrowLeft className="h-4 w-4" /> Back
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Back
         </button>
 
-        <div className="text-center mb-6">
-          <Mail className="h-12 w-12 text-[#ef5f47] mx-auto mb-3" />
-          <h3 className="text-xl font-bold mb-2">
-            {mode === 'signup' ? 'Verify your email' : 'Enter code'}
-          </h3>
-          <p className="text-muted-foreground text-sm">
-            We sent a 6-digit code to <span className="font-medium">{formData.email}</span>
+        <div className="text-center">
+          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-accent text-primary">
+            <Mail className="size-5" aria-hidden="true" />
+          </div>
+          <h2 id={verifyTitleId} className="text-xl font-semibold tracking-tight">
+            {mode === 'signup' ? 'Verify your email' : 'Enter your code'}
+          </h2>
+          <p id={verifyDescriptionId} className="mx-auto mt-2 max-w-xs text-sm leading-6 text-muted-foreground">
+            We sent a 6-digit code to <span className="font-medium text-foreground">{formData.email}</span>
           </p>
         </div>
 
         {errors.general && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3.5 py-3 text-sm text-destructive" role="alert">
             {errors.general}
           </div>
         )}
 
-        <div>
+        <div className="space-y-2">
+          <label htmlFor={otpInputId} className="text-sm font-medium">Verification code</label>
           <input
+            id={otpInputId}
             type="text"
-            placeholder="6-digit code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="000000"
             value={formData.otpCode}
             onChange={(e) => handleChange('otpCode', e.target.value.replace(/\D/g, '').slice(0, 6))}
             onBlur={() => handleBlur('otpCode')}
             disabled={isLoading}
             className={cn(
-              'w-full text-center py-3 px-4 bg-[#f7f8f5] border rounded-xl text-2xl font-mono tracking-widest',
-              errors.otpCode ? 'border-red-400' : 'border-[#17201d]/10'
+              inputBase,
+              'text-center font-mono text-2xl tracking-[0.3em]',
+              errors.otpCode && 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/30'
             )}
+            aria-invalid={Boolean(errors.otpCode)}
+            aria-describedby={errors.otpCode ? errorId('otpCode') : verifyDescriptionId}
             maxLength={6}
             autoFocus
           />
-          {errors.otpCode && (
-            <p className="text-red-500 text-xs mt-1.5">{errors.otpCode}</p>
-          )}
+          {renderError('otpCode')}
         </div>
 
         {method === 'password' && mode === 'signup' && (
-          <div>
+          <div className="space-y-2">
+            <label htmlFor={passwordInputId} className="text-sm font-medium">Create password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              {renderFieldIcon(Lock)}
               <input
+                id={passwordInputId}
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Create password"
+                autoComplete="new-password"
+                placeholder="At least 8 characters"
                 value={formData.password}
                 onChange={(e) => handleChange('password', e.target.value)}
                 onBlur={() => handleBlur('password')}
                 disabled={isLoading}
                 className={cn(
-                  'w-full pl-10 pr-12 py-3 bg-[#f7f8f5] border rounded-xl',
-                  errors.password ? 'border-red-400' : 'border-[#17201d]/10'
+                  inputBase,
+                  'pl-10 pr-11',
+                  errors.password && 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/30'
                 )}
+                aria-invalid={Boolean(errors.password)}
+                aria-describedby={errors.password ? errorId('password') : undefined}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
-              >
-                {showPassword ? <EyeOff className="h-5 w-5 text-muted-foreground" /> : <Eye className="h-5 w-5 text-muted-foreground" />}
-              </button>
+              {renderPasswordToggle()}
             </div>
-            {errors.password && <p className="text-red-500 text-xs mt-1.5">{errors.password}</p>}
+            {renderError('password')}
           </div>
         )}
 
         <button
           type="submit"
-          onClick={handleSubmit}
           disabled={isLoading}
-          className={cn(
-            'w-full flex items-center justify-center gap-2 bg-[#17201d] text-white font-medium py-3 px-6 rounded-xl pressable',
-            'disabled:opacity-50'
-          )}
-          style={{
-            transition: TRANSITION,
-            transform: isLoading ? 'none' : undefined
-          }}
+          aria-busy={isLoading}
+          className="pressable inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform,opacity] duration-150 ease-[var(--ease-out)] hover:bg-primary/90 hover:shadow-md active:scale-[0.97] disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <><Loader2 className="size-4 animate-spin" aria-hidden="true" /> Verifying…</>
           ) : (
-            <>
-              {mode === 'signup' ? 'Create account' : 'Sign in'}
-              <ArrowRight className="h-4 w-4" />
-            </>
+            <>{mode === 'signup' ? 'Create account' : 'Sign in'} <ArrowRight className="size-4" aria-hidden="true" /></>
           )}
         </button>
-      </div>
+      </form>
     );
   }
 
-  // Main form
+  const nameInputId = fieldId('name');
+  const emailInputId = fieldId('email');
+  const passwordInputId = fieldId('password');
+  const confirmPasswordInputId = fieldId('confirmPassword');
+  const formTitleId = `${formId}-title`;
+
   return (
-    <form onSubmit={handleSubmit} className={cn('space-y-4', className)}>
-      {/* Method toggle */}
-      <div className="flex bg-[#f7f8f5] rounded-xl p-1 mb-6">
-        <button
-          type="button"
-          onClick={() => handleMethodChange('password')}
-          className={cn(
-            'flex-1 py-2 px-3 rounded-lg text-sm font-medium pressable',
-            method === 'password'
-              ? 'bg-white shadow-sm text-[#17201d]'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-          style={{ transition: TRANSITION }}
-        >
-          Password
-        </button>
-        <button
-          type="button"
-          onClick={() => handleMethodChange('otp')}
-          className={cn(
-            'flex-1 py-2 px-3 rounded-lg text-sm font-medium pressable',
-            method === 'otp'
-              ? 'bg-white shadow-sm text-[#17201d]'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-          style={{ transition: TRANSITION }}
-        >
-          One-time code
-        </button>
+    <form id={`${formId}-form`} onSubmit={handleSubmit} className={cn('space-y-5', className)} aria-labelledby={formTitleId}>
+      <h2 id={formTitleId} className="sr-only">{mode === 'login' ? 'Sign in' : 'Create your account'}</h2>
+
+      <div className="space-y-2">
+        <span className="text-sm font-medium">Sign in method</span>
+        <div className="flex rounded-lg border border-border bg-muted/60 p-1" role="group" aria-label="Sign in method">
+          <button
+            type="button"
+            onClick={() => handleMethodChange('password')}
+            aria-pressed={method === 'password'}
+            className={cn(
+              'pressable min-h-9 flex-1 rounded-md px-3 py-2 text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-150 ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              method === 'password' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Password
+          </button>
+          <button
+            type="button"
+            onClick={() => handleMethodChange('otp')}
+            disabled={mode === 'signup'}
+            aria-pressed={method === 'otp'}
+            title={mode === 'signup' ? 'Create an account with a password instead' : undefined}
+            className={cn(
+              'pressable min-h-9 flex-1 rounded-md px-3 py-2 text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-150 ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed',
+              mode === 'signup' && 'opacity-40',
+              method === 'otp' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            One-time code
+          </button>
+        </div>
+        {mode === 'signup' && (
+          <p className="text-xs leading-5 text-muted-foreground">
+            Accounts are created with an email + password and a quick email verification.
+          </p>
+        )}
       </div>
 
-      {/* Mode toggle */}
-      <div className="flex bg-[#f7f8f5] rounded-xl p-1 mb-6">
-        <button
-          type="button"
-          onClick={() => handleModeChange('login')}
-          className={cn(
-            'flex-1 py-2 px-3 rounded-lg text-sm font-medium pressable',
-            mode === 'login'
-              ? 'bg-white shadow-sm text-[#17201d]'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-          style={{ transition: TRANSITION }}
-        >
-          Sign in
-        </button>
-        <button
-          type="button"
-          onClick={() => handleModeChange('signup')}
-          className={cn(
-            'flex-1 py-2 px-3 rounded-lg text-sm font-medium pressable',
-            mode === 'signup'
-              ? 'bg-white shadow-sm text-[#17201d]'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-          style={{ transition: TRANSITION }}
-        >
-          Sign up
-        </button>
+      <div className="space-y-2">
+        <span className="text-sm font-medium">Account</span>
+        <div className="flex rounded-lg border border-border bg-muted/60 p-1" role="group" aria-label="Account action">
+          <button
+            type="button"
+            onClick={() => handleModeChange('login')}
+            aria-pressed={mode === 'login'}
+            className={cn(
+              'pressable min-h-9 flex-1 rounded-md px-3 py-2 text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-150 ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              mode === 'login' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Sign in
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeChange('signup')}
+            aria-pressed={mode === 'signup'}
+            className={cn(
+              'pressable min-h-9 flex-1 rounded-md px-3 py-2 text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-150 ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              mode === 'signup' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Sign up
+          </button>
+        </div>
       </div>
 
       {errors.general && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3.5 py-3 text-sm text-destructive" role="alert">
           {errors.general}
         </div>
       )}
 
-      {/* Name field for signup */}
       {mode === 'signup' && (
-        <div>
+        <div className="space-y-2">
+          <label htmlFor={nameInputId} className="text-sm font-medium">Full name</label>
           <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            {renderFieldIcon(User)}
             <input
+              id={nameInputId}
               type="text"
-              placeholder="Full name"
+              autoComplete="name"
+              placeholder="Your name"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
               onBlur={() => handleBlur('name')}
               disabled={isLoading}
               className={cn(
-                'w-full pl-10 pr-4 py-3 bg-[#f7f8f5] border rounded-xl',
-                errors.name ? 'border-red-400' : 'border-[#17201d]/10'
+                inputBase,
+                'pl-10',
+                errors.name && 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/30'
               )}
+              aria-invalid={Boolean(errors.name)}
+              aria-describedby={errors.name ? errorId('name') : undefined}
             />
           </div>
-          {errors.name && <p className="text-red-500 text-xs mt-1.5">{errors.name}</p>}
+          {renderError('name')}
         </div>
       )}
 
-      {/* Email */}
-      <div>
+      <div className="space-y-2">
+        <label htmlFor={emailInputId} className="text-sm font-medium">Email address</label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          {renderFieldIcon(Mail)}
           <input
+            id={emailInputId}
             type="email"
-            placeholder="Email address"
+            autoComplete="email"
+            placeholder="you@example.com"
             value={formData.email}
             onChange={(e) => handleChange('email', e.target.value)}
             onBlur={() => handleBlur('email')}
             disabled={isLoading}
             className={cn(
-              'w-full pl-10 pr-4 py-3 bg-[#f7f8f5] border rounded-xl',
-              errors.email ? 'border-red-400' : 'border-[#17201d]/10'
+              inputBase,
+              'pl-10',
+              errors.email && 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/30'
             )}
+            aria-invalid={Boolean(errors.email)}
+            aria-describedby={errors.email ? errorId('email') : undefined}
             autoFocus
           />
         </div>
-        {errors.email && <p className="text-red-500 text-xs mt-1.5">{errors.email}</p>}
+        {renderError('email')}
       </div>
 
-      {/* Password (only for password method) */}
       {method === 'password' && (
         <>
-          <div>
+          <div className="space-y-2">
+            <label htmlFor={passwordInputId} className="text-sm font-medium">Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              {renderFieldIcon(Lock)}
               <input
+                id={passwordInputId}
                 type={showPassword ? 'text' : 'password'}
-                placeholder={mode === 'login' ? 'Password' : 'Create password'}
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                placeholder={mode === 'login' ? 'Your password' : 'At least 8 characters'}
                 value={formData.password}
                 onChange={(e) => handleChange('password', e.target.value)}
                 onBlur={() => handleBlur('password')}
                 disabled={isLoading}
                 className={cn(
-                  'w-full pl-10 pr-12 py-3 bg-[#f7f8f5] border rounded-xl',
-                  errors.password ? 'border-red-400' : 'border-[#17201d]/10'
+                  inputBase,
+                  'pl-10 pr-11',
+                  errors.password && 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/30'
                 )}
+                aria-invalid={Boolean(errors.password)}
+                aria-describedby={errors.password ? errorId('password') : undefined}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
-              >
-                {showPassword ? <EyeOff className="h-5 w-5 text-muted-foreground" /> : <Eye className="h-5 w-5 text-muted-foreground" />}
-              </button>
+              {renderPasswordToggle()}
             </div>
-            {errors.password && <p className="text-red-500 text-xs mt-1.5">{errors.password}</p>}
+            {renderError('password')}
           </div>
 
-          {/* Confirm password for signup */}
           {mode === 'signup' && (
-            <div>
+            <div className="space-y-2">
+              <label htmlFor={confirmPasswordInputId} className="text-sm font-medium">Confirm password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                {renderFieldIcon(Lock)}
                 <input
+                  id={confirmPasswordInputId}
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Confirm password"
+                  autoComplete="new-password"
+                  placeholder="Repeat your password"
                   value={formData.confirmPassword}
                   onChange={(e) => handleChange('confirmPassword', e.target.value)}
                   onBlur={() => handleBlur('confirmPassword')}
                   disabled={isLoading}
                   className={cn(
-                    'w-full pl-10 pr-4 py-3 bg-[#f7f8f5] border rounded-xl',
-                    errors.confirmPassword ? 'border-red-400' : 'border-[#17201d]/10'
+                    inputBase,
+                    'pl-10',
+                    errors.confirmPassword && 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/30'
                   )}
+                  aria-invalid={Boolean(errors.confirmPassword)}
+                  aria-describedby={errors.confirmPassword ? errorId('confirmPassword') : undefined}
                 />
               </div>
-              {errors.confirmPassword && <p className="text-red-500 text-xs mt-1.5">{errors.confirmPassword}</p>}
+              {renderError('confirmPassword')}
             </div>
           )}
 
-          {/* Forgot password for login */}
           {mode === 'login' && (
             <div className="text-right">
-              <button type="button" className="text-xs text-[#ef5f47] hover:underline">
+              <button type="button" className="rounded-md text-xs font-medium text-primary underline-offset-4 transition-[color,transform] duration-150 ease-[var(--ease-out)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 Forgot password?
               </button>
             </div>
@@ -490,29 +544,21 @@ export function FullAuthForm({
       <button
         type="submit"
         disabled={isLoading}
-        className={cn(
-          'w-full flex items-center justify-center gap-2 bg-[#17201d] text-white font-medium py-3 px-6 rounded-xl pressable',
-          'disabled:opacity-50'
-        )}
-        style={{
-          transition: TRANSITION,
-          transform: isLoading ? 'none' : undefined
-        }}
+        aria-busy={isLoading}
+        className="pressable inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform,opacity] duration-150 ease-[var(--ease-out)] hover:bg-primary/90 hover:shadow-md active:scale-[0.97] disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         {isLoading ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
+          <><Loader2 className="size-4 animate-spin" aria-hidden="true" /> Working…</>
         ) : (
-          <>
-            {mode === 'login' ? 'Sign in' : 'Continue'}
-            <ArrowRight className="h-4 w-4" />
-          </>
+          <>{mode === 'login' ? 'Sign in' : 'Continue'} <ArrowRight className="size-4" aria-hidden="true" /></>
         )}
       </button>
 
-      <p className="text-center text-xs text-muted-foreground">
+      <p className="text-center text-xs leading-5 text-muted-foreground">
         By continuing, you agree to our{' '}
-        <a href="#" className="text-[#ef5f47] hover:underline">Terms</a> and{' '}
-        <a href="#" className="text-[#ef5f47] hover:underline">Privacy</a>
+        <a href="#" className="font-medium text-primary underline-offset-4 transition-[color] duration-150 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Terms</a>{' '}
+        and{' '}
+        <a href="#" className="font-medium text-primary underline-offset-4 transition-[color] duration-150 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Privacy</a>
       </p>
     </form>
   );

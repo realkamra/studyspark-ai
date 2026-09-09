@@ -4,7 +4,7 @@
 
 export type GenerationStatus = "queued" | "generating" | "ready" | "error";
 
-export type Accent = "lime" | "coral" | "blue";
+export type Accent = "sage" | "coral" | "slate" | "mint";
 
 /** The full AI-generated study kit for one material. */
 export interface StudyKit {
@@ -12,6 +12,7 @@ export interface StudyKit {
   flashcards?: Flashcard[];
   quiz?: QuizQuestion[];
   gamePairs?: GamePair[];
+  videoSuggestions?: string[];
 }
 
 export interface StudyGuide {

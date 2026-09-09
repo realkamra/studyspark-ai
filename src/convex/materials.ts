@@ -63,7 +63,7 @@ export const listMaterials = query({
     return docs.map((doc) => ({
       _id: doc._id,
       title: doc.title,
-      accent: doc.accent ?? "lime",
+      accent: doc.accent ?? "sage",
       sourceType: doc.sourceType,
       generatedAt: doc.generatedAt,
       generationStatus: doc.generationStatus,
@@ -178,7 +178,7 @@ export const createMaterial = mutation({
     sourceText: v.optional(v.string()),
     sourceFileId: v.optional(v.id("_storage")),
     sourceFileName: v.optional(v.string()),
-    accent: v.optional(v.union(v.literal("lime"), v.literal("coral"), v.literal("blue"))),
+    accent: v.optional(v.union(v.literal("sage"), v.literal("coral"), v.literal("slate"), v.literal("mint"))),
   },
   handler: async (ctx, args) => {
     const user = await getAuthUser(ctx);
@@ -206,7 +206,7 @@ export const createMaterial = mutation({
       sourceText: sourceText || undefined,
       sourceFileId: args.sourceFileId,
       sourceFileName: args.sourceFileName,
-      accent: args.accent ?? "lime",
+      accent: args.accent ?? "sage",
       generationStatus: "queued",
     });
 

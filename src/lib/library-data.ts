@@ -7,7 +7,7 @@ export interface LearningItem {
   description: string;
   format: LearningFormat;
   duration: string;
-  accent: "lime" | "coral" | "blue";
+  accent: "sage" | "coral" | "slate";
   publishedBy: string;
   isOwned?: boolean;
   sourceName?: string;
@@ -21,7 +21,7 @@ export const libraryItems: LearningItem[] = [
     description: "A visual introduction to how small signals become better decisions, better products, and better teams.",
     format: "Guide",
     duration: "7 min read",
-    accent: "lime",
+    accent: "sage",
     publishedBy: "Notefox editorial",
   },
   {
@@ -31,7 +31,7 @@ export const libraryItems: LearningItem[] = [
     description: "See how plants turn sunlight into food through a tiny, surprisingly efficient energy system.",
     format: "Video",
     duration: "4 min watch",
-    accent: "blue",
+    accent: "slate",
     publishedBy: "Notefox editorial",
   },
   {
@@ -61,7 +61,7 @@ export const libraryItems: LearningItem[] = [
     description: "A friendly tour of recall, spacing, and why rereading the same paragraph is not a personality trait.",
     format: "Video",
     duration: "5 min watch",
-    accent: "lime",
+    accent: "sage",
     publishedBy: "Notefox editorial",
   },
   {
@@ -71,7 +71,7 @@ export const libraryItems: LearningItem[] = [
     description: "Turn a spreadsheet full of numbers into a clear point of view people can act on.",
     format: "Flashcards",
     duration: "10 cards",
-    accent: "blue",
+    accent: "slate",
     publishedBy: "Notefox editorial",
   },
 ];

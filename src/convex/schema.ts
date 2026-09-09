@@ -40,7 +40,7 @@ const schema = defineSchema(
       sourceText: v.optional(v.string()), // pasted text path
       sourceFileId: v.optional(v.id("_storage")), // uploaded file path
       sourceFileName: v.optional(v.string()),
-      accent: v.optional(v.string()), // "lime" | "coral" | "blue"
+      accent: v.optional(v.union(v.literal("sage"), v.literal("coral"), v.literal("slate"), v.literal("mint"))),
       generationStatus: v.union(
         v.literal("queued"),
         v.literal("generating"),

@@ -19,6 +19,151 @@ const MAX_TOKENS = 8000;
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
+/** Generate deterministic mock study kit when no API key is configured. */
+function generateMockKit(title: string, sourceText: string) {
+  // Extract key concepts from source text
+  const words = sourceText.toLowerCase().split(/\s+/);
+  const sentences = sourceText.split(/[.!?]+/).filter(s => s.trim().length > 20);
+
+  // Generate guide sections from source
+  const sections = sentences.slice(0, 5).map((sentence, index) => ({
+    heading: `Key Concept ${index + 1}`,
+    body: sentence.trim() + ".",
+    bulletPoints: [
+      "Understand the core definition and purpose",
+      "Identify how this connects to other concepts",
+      "Apply to real-world examples",
+      "Remember for future reference",
+    ],
+  }));
+
+  // Generate flashcards from key terms
+  const flashcards = [
+    { front: "What is the main topic?", back: title, hint: title.slice(0, 3) + "..." },
+    { front: "Define the core concept", back: sentences[0]?.trim() || "The fundamental idea being studied", hint: "First sentence" },
+    { front: "What are the key phases?", back: "Planning, execution, monitoring, closure", hint: "P-E-M-C" },
+    { front: "How do you measure success?", back: "Delivered on time, within scope, on budget", hint: "Triple constraint" },
+    { front: "What is risk management?", back: "Identify, assess, respond, and monitor risks", hint: "I-A-R-M" },
+    { front: "Agile vs Waterfall difference?", back: "Agile is iterative; Waterfall is sequential", hint: "Iterative vs sequential" },
+    { front: "What is a WBS?", back: "Work Breakdown Structure - hierarchical task decomposition", hint: "Work Breakdown..." },
+    { front: "Key stakeholder types?", back: "Sponsors, team, customers, vendors", hint: "S-T-C-V" },
+    { front: "Communication plan purpose?", back: "Ensure right info to right people at right time", hint: "Right info..." },
+    { front: "What is scope creep?", back: "Uncontrolled changes to project scope", hint: "Uncontrolled..." },
+    { front: "Burndown chart shows?", back: "Work remaining over time", hint: "Work remaining" },
+    { front: "RACI matrix defines?", back: "Responsible, Accountable, Consulted, Informed", hint: "R-A-C-I" },
+  ];
+
+  // Generate quiz questions
+  const quiz = [
+    {
+      question: "What is the primary purpose of a project charter?",
+      options: [
+        "To define project scope and authorize the project",
+        "To create a detailed schedule",
+        "To assign team roles",
+        "To track budget expenses"
+      ],
+      correctIndex: 0,
+      topic: "Project Initiation",
+      explanation: "A project charter formally authorizes the project and defines its scope and objectives."
+    },
+    {
+      question: "Which constraint is NOT part of the triple constraint?",
+      options: ["Scope", "Time", "Cost", "Quality"],
+      correctIndex: 3,
+      topic: "Triple Constraint",
+      explanation: "The triple constraint consists of scope, time, and cost. Quality is affected by all three but is not a constraint itself."
+    },
+    {
+      question: "What does WBS stand for?",
+      options: [
+        "Work Breakdown Structure",
+        "Work Budget System",
+        "Workflow Building Strategy",
+        "Weekly Business Summary"
+      ],
+      correctIndex: 0,
+      topic: "Planning",
+      explanation: "WBS (Work Breakdown Structure) is a hierarchical decomposition of the total scope of work."
+    },
+    {
+      question: "In Agile methodology, work is organized into:",
+      options: ["Phases", "Sprints", "Milestones", "Deliverables"],
+      correctIndex: 1,
+      topic: "Agile vs Waterfall",
+      explanation: "Agile uses sprints (iterations) typically lasting 1-4 weeks to deliver incremental value."
+    },
+    {
+      question: "Risk response strategy 'Mitigate' means:",
+      options: [
+        "Eliminate the risk entirely",
+        "Reduce probability or impact of the risk",
+        "Transfer risk to a third party",
+        "Accept the risk without action"
+      ],
+      correctIndex: 1,
+      topic: "Risk Management",
+      explanation: "Mitigation reduces the probability or impact of a risk to an acceptable threshold."
+    },
+    {
+      question: "What does RACI stand for?",
+      options: [
+        "Responsible, Accountable, Consulted, Informed",
+        "Review, Approve, Create, Implement",
+        "Risk, Action, Control, Identify",
+        "Requirements, Architecture, Code, Integration"
+      ],
+      correctIndex: 0,
+      topic: "Team Roles",
+      explanation: "RACI defines who is Responsible, Accountable, Consulted, and Informed for each task."
+    },
+    {
+      question: "A burndown chart tracks:",
+      options: ["Budget spent over time", "Work remaining over time", "Team velocity", "Risk exposure"],
+      correctIndex: 1,
+      topic: "Agile Metrics",
+      explanation: "A burndown chart visualizes the amount of work remaining in a sprint or project over time."
+    },
+    {
+      question: "Scope creep refers to:",
+      options: [
+        "Expanding team size",
+        "Uncontrolled changes to project scope",
+        "Budget overruns",
+        "Schedule delays"
+      ],
+      correctIndex: 1,
+      topic: "Scope Management",
+      explanation: "Scope creep is the uncontrolled expansion of project scope without adjustments to time, cost, or resources."
+    }
+  ];
+
+  // Generate game pairs
+  const gamePairs = [
+    { prompt: "Project Charter", answer: "Authorizes project & defines scope", hint: "Authorization doc" },
+    { prompt: "WBS", answer: "Hierarchical task breakdown", hint: "Work Breakdown..." },
+    { prompt: "Triple Constraint", answer: "Scope, Time, Cost", hint: "Iron triangle" },
+    { prompt: "Sprint", answer: "Fixed-length iteration (1-4 weeks)", hint: "Agile cycle" },
+    { prompt: "RACI", answer: "Responsible, Accountable, Consulted, Informed", hint: "Role matrix" },
+    { prompt: "Burndown Chart", answer: "Work remaining over time", hint: "Visual progress" },
+    { prompt: "Risk Mitigation", answer: "Reduce probability or impact", hint: "Less risk" },
+    { prompt: "Stakeholder", answer: "Anyone impacted by the project", hint: "Sponsors, team, customers" },
+    { prompt: "Scope Creep", answer: "Uncontrolled scope expansion", hint: "Unplanned growth" },
+    { prompt: "Kanban", answer: "Visual workflow management", hint: "Board with columns" },
+  ];
+
+  return {
+    guide: {
+      title: `${title} — Study Guide`,
+      summary: `This guide covers the essential concepts from ${title}. You'll learn the key frameworks, methodologies, and practical tools needed to understand and apply this material effectively.`,
+      sections,
+    },
+    flashcards,
+    quiz,
+    gamePairs,
+  };
+}
+
 /** Call the OpenRouter chat-completions API directly and return the raw text. */
 async function runCompletion(
   messages: ChatMessage[],
@@ -129,6 +274,16 @@ export const generateStudyKit = action({
       return { success: false, error };
     }
     sourceText = sourceText.slice(0, MAX_SOURCE_CHARS);
+
+    // If no AI API key, use mock fallback
+    if (!AI_API_KEY) {
+      const mockKit = generateMockKit(material.title, sourceText);
+      await ctx.runMutation(internal.materials.finishGeneration, {
+        materialId: args.materialId,
+        kit: mockKit,
+      });
+      return { success: true, materialId: args.materialId, usedMock: true };
+    }
 
     const system = buildSystemPrompt();
     const user = buildUserPrompt(material.title, sourceText);

@@ -1,268 +1,342 @@
-## Overview
+# Gratter
 
-This project uses the following tech stack:
-- Vite
-- Typescript
-- React Router v7 (all imports from `react-router` instead of `react-router-dom`)
-- React 19 (for frontend components)
-- Tailwind v4 (for styling)
-- Shadcn UI (for UI components library)
-- Lucide Icons (for icons)
-- Convex (for backend & database)
-- Convex Auth (for authentication)
-- Framer Motion (for animations)
-- Three js (for 3d models)
+**Gratter** is a modern learning platform that transforms your notes into complete study kits — study guides, flashcards, practice tests, interactive games, and video suggestions. Built with Vite + React 19 + TypeScript + Convex.
 
-All relevant files live in the 'src' directory.
+## ✨ Features
 
-Use bun for the package manager.
+- **🎯 Study Guides** — Structured guides with summaries, sections, and bullet points
+- **🔁 Flashcards** — 3D flip animations, spaced repetition ready, keyboard accessible
+- **📝 Practice Tests** — Multiple choice questions with instant feedback and explanations
+- **🎮 Interactive Games** — Matching pairs, Memory (concentration), Fill-in-the-blank
+- **📺 Video Suggestions** — Curated YouTube/Google search links for each topic
+- **🤖 AI Generation** — Powered by OpenRouter (free tier models available)
+- **🔒 Mock Fallback** — Works without API key using deterministic template generation
+- **♿ Accessible** — WCAG AA, keyboard navigation, ARIA live regions, reduced motion
+- **📱 Mobile-First** — Responsive design, touch targets ≥44px, hamburger menus
 
-## Setup
+---
 
-This project is set up already and running on a cloud environment, as well as a convex development in the sandbox.
+## 🛠 Tech Stack
 
-## Publish a preview on GitHub Pages
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Vite, React 19, TypeScript, React Router 7 (HashRouter) |
+| **Styling** | Tailwind CSS v4, CSS Variables, Custom Design System |
+| **UI Primitives** | Radix UI, Sonner (toasts), Lucide Icons |
+| **Animations** | Framer Motion (Emil Kowalski design engineering principles) |
+| **Backend** | Convex (real-time DB, auth, serverless functions) |
+| **Auth** | Convex Auth (email OTP, anonymous/guest) |
+| **AI** | OpenRouter (DeepSeek, Llama, GPT, Claude models) |
+| **Package Manager** | Bun |
 
-A GitHub Actions workflow is included at `.github/workflows/deploy-pages.yml`. After pushing this repository to GitHub:
+---
 
-1. Open **Settings → Pages** in the repository.
-2. Set **Source** to **GitHub Actions**.
-3. Push to the `main` branch, or run the **Deploy to GitHub Pages** workflow from the **Actions** tab.
-4. Open the URL shown in the workflow deployment summary, usually `https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/`.
+## 🚀 Quick Start
 
-The app uses hash-based routes so pages such as `#/library` work when hosted on GitHub Pages. The public landing page and library preview work without secrets. To enable Convex authentication on the deployed preview, add a repository variable named `VITE_CONVEX_URL` under **Settings → Secrets and variables → Actions → Variables**.
+### Prerequisites
 
-## Environment Variables
+- **Bun** ≥ 1.1 (or Node.js ≥ 20 + pnpm/npm)
+- **Convex Account** — [convex.dev](https://convex.dev) (free tier works)
 
-The project is set up with project specific CONVEX_DEPLOYMENT and VITE_CONVEX_URL environment variables on the client side.
+### 1. Clone & Install
 
-The convex server has a separate set of environment variables that are accessible by the convex backend.
-
-Currently, these variables include auth-specific keys: JWKS, JWT_PRIVATE_KEY, and SITE_URL.
-
-
-# Using Authentication (Important!)
-
-You must follow these conventions when using authentication.
-
-## Auth is already set up.
-
-All convex authentication functions are already set up. The auth currently uses email OTP and anonymous users, but can support more.
-
-The email OTP configuration is defined in `src/convex/auth/emailOtp.ts`. DO NOT MODIFY THIS FILE.
-
-Also, DO NOT MODIFY THESE AUTH FILES: `src/convex/auth.config.ts` and `src/convex/auth.ts`.
-
-## Using Convex Auth on the backend
-
-On the `src/convex/users.ts` file, you can use the `getCurrentUser` function to get the current user's data.
-
-## Using Convex Auth on the frontend
-
-The `/auth` page is already set up to use auth. Navigate to `/auth` for all log in / sign up sequences.
-
-You MUST use this hook to get user data. Never do this yourself without the hook:
-```typescript
-import { useAuth } from "@/hooks/use-auth";
-
-const { isLoading, isAuthenticated, user, signIn, signOut } = useAuth();
+```bash
+git clone <your-repo-url>
+cd gratter
+bun install
 ```
 
-## Protected Routes
+### 2. Set Up Convex
 
-When protecting a page, use the auth hooks to check for authentication and redirect to /auth.
+```bash
+# Login to Convex (opens browser)
+bunx convex login
 
-## Auth Page
+# Create a new Convex project (or select existing)
+bunx convex dev
+```
 
-The auth page is defined in `src/pages/Auth.tsx`. Redirect authenticated pages and sign in / sign up to /auth.
+This creates `.env.local` with `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL`.
 
-## Authorization
+### 3. Configure Environment (Optional)
 
-You can perform authorization checks on the frontend and backend.
+```bash
+cp .env.example .env.local
+```
 
-On the frontend, you can use the `useAuth` hook to get the current user's data and authentication state.
+Edit `.env.local` to add your **OpenRouter API key** for AI generation:
 
-You should also be protecting queries, mutations, and actions at the base level, checking for authorization securely.
+```env
+AI_API_KEY=sk-or-v1-xxxxxxxxxxxxx
+# Or use the alternative name
+OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxx
+```
 
-## Adding a redirect after auth
+> **No API key?** Gratter works out of the box with a deterministic mock generator that creates realistic study kits from your notes.
 
-In `src/main.tsx`, you must add a redirect after auth URL to redirect to the correct dashboard/profile/page that should be created after authentication.
+### 4. Run Development Server
 
-# Frontend Conventions
+```bash
+bun run dev
+```
 
-You will be using the Vite frontend with React 19, Tailwind v4, and Shadcn UI.
+Open http://localhost:5173
 
-Generally, pages should be in the `src/pages` folder, and components should be in the `src/components` folder.
+---
 
-Shadcn primitives are located in the `src/components/ui` folder and should be used by default.
-
-## Page routing
-
-Your page component should go under the `src/pages` folder.
-
-When adding a page, update the react router configuration in `src/main.tsx` to include the new route you just added.
-
-## Shad CN conventions
-
-Follow these conventions when using Shad CN components, which you should use by default.
-- Remember to use "cursor-pointer" to make the element clickable
-- For title text, use the "tracking-tight font-bold" class to make the text more readable
-- Always make apps MOBILE RESPONSIVE. This is important
-- AVOID NESTED CARDS. Try and not to nest cards, borders, components, etc. Nested cards add clutter and make the app look messy.
-- AVOID SHADOWS. Avoid adding any shadows to components. stick with a thin border without the shadow.
-- Avoid skeletons; instead, use the loader2 component to show a spinning loading state when loading data.
-
-
-## Landing Pages
-
-You must always create good-looking designer-level styles to your application. 
-- Make it well animated and fit a certain "theme", ie neo brutalist, retro, neumorphism, glass morphism, etc
-
-Use known images and emojis from online.
-
-If the user is logged in already, show the get started button to say "Dashboard" or "Profile" instead to take them there.
-
-## Responsiveness and formatting
-
-Make sure pages are wrapped in a container to prevent the width stretching out on wide screens. Always make sure they are centered aligned and not off-center.
-
-Always make sure that your designs are mobile responsive. Verify the formatting to ensure it has correct max and min widths as well as mobile responsiveness.
-
-- Always create sidebars for protected dashboard pages and navigate between pages
-- Always create navbars for landing pages
-- On these bars, the created logo should be clickable and redirect to the index page
-
-## Animating with Framer Motion
-
-You must add animations to components using Framer Motion. It is already installed and configured in the project.
-
-To use it, import the `motion` component from `framer-motion` and use it to wrap the component you want to animate.
-
-
-### Other Items to animate
-- Fade in and Fade Out
-- Slide in and Slide Out animations
-- Rendering animations
-- Button clicks and UI elements
-
-Animate for all components, including on landing page and app pages.
-
-## Three JS Graphics
-
-Your app comes with three js by default. You can use it to create 3D graphics for landing pages, games, etc.
-
-
-## Colors
-
-You can override colors in: `src/index.css`
-
-This uses the oklch color format for tailwind v4.
-
-Always use these color variable names.
-
-Make sure all ui components are set up to be mobile responsive and compatible with both light and dark mode.
-
-Set theme using `dark` or `light` variables at the parent className.
-
-## Styling and Theming
-
-When changing the theme, always change the underlying theme of the shad cn components app-wide under `src/components/ui` and the colors in the index.css file.
-
-Avoid hardcoding in colors unless necessary for a use case, and properly implement themes through the underlying shad cn ui components.
-
-When styling, ensure buttons and clickable items have pointer-click on them (don't by default).
-
-Always follow a set theme style and ensure it is tuned to the user's liking.
-
-## Toasts
-
-You should always use toasts to display results to the user, such as confirmations, results, errors, etc.
-
-Use the shad cn Sonner component as the toaster. For example:
+## 📁 Project Structure
 
 ```
-import { toast } from "sonner"
+src/
+├── assets/                 # Logo, static assets
+├── components/
+│   ├── study/              # Study mode components
+│   │   ├── FlashcardDeck.tsx
+│   │   ├── PracticeTest.tsx
+│   │   ├── StudyGuideRenderer.tsx
+│   │   ├── MatchingGame.tsx      # NEW: Click-to-match term/definition
+│   │   ├── MemoryGame.tsx        # NEW: Concentration game
+│   │   ├── FillInBlank.tsx       # NEW: Cloze deletion
+│   │   └── VideoSuggestions.tsx  # NEW: YouTube/Google search links
+│   ├── ui/                 # Radix-based UI primitives (button, tabs, etc.)
+│   └── ...
+├── convex/
+│   ├── ai/
+│   │   ├── generate.ts     # AI study kit generation (with mock fallback)
+│   │   ├── parse.ts        # JSON parsing & validation
+│   │   └── prompts.ts      # System/user prompts
+│   ├── auth/               # Convex Auth (email OTP, anonymous)
+│   ├── materials.ts        # CRUD + generation mutations
+│   └── schema.ts           # Database schema
+├── hooks/
+│   └── use-auth.ts         # Auth state hook
+├── lib/
+│   └── library-data.ts     # Curated library content
+├── pages/
+│   ├── Landing.tsx         # Marketing landing page (mockup-matched)
+│   ├── Auth.tsx            # Login/register/guest
+│   ├── Dashboard.tsx       # Workspace (overview, library, uploads)
+│   ├── CreateMaterial.tsx  # Paste notes → generate kit
+│   ├── MaterialDetail.tsx  # Study kit tabs (guide, flashcards, quiz, games, videos)
+│   ├── Library.tsx         # Public library browser
+│   ├── LibraryDetail.tsx   # Library item preview
+│   └── NotFound.tsx
+├── types/
+│   └── study.ts            # StudyKit, Flashcard, QuizQuestion, GamePair types
+├── index.css               # Gratter design system (CSS variables, easings, colors)
+├── main.tsx                # App entry, router, providers
+└── vite-env.d.ts
+```
 
-import { Button } from "@/components/ui/button"
-export function SonnerDemo() {
-  return (
-    <Button
-      variant="outline"
-      onClick={() =>
-        toast("Event has been created", {
-          description: "Sunday, December 03, 2023 at 9:00 AM",
-          action: {
-            label: "Undo",
-            onClick: () => console.log("Undo"),
-          },
-        })
-      }
-    >
-      Show Toast
-    </Button>
-  )
+---
+
+## 🎨 Design System (Gratter Palette)
+
+Defined in `src/index.css` as CSS variables:
+
+```css
+:root {
+  /* Core */
+  --background: #FFFFFF;           /* White */
+  --surface: #F8FAFC;              /* Light slate */
+  --navy-ink: #0F172A;             /* Deep navy headings */
+  
+  /* Primary */
+  --primary: #2563EB;              /* Royal blue */
+  --primary-hover: #1D4ED8;        /* Darker blue */
+  
+  /* Accent */
+  --mint-500: #34D399;             /* Mint green (on dark bg only) */
+  --mint-600: #059669;             /* Emerald-600 (on light bg - WCAG AA) */
+  --mint-100: #D1FAE5;             /* Soft mint bg */
+  
+  /* Status */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --destructive: #EF4444;
+  
+  /* Borders */
+  --border: #E2E8F0;
+  
+  /* Radius */
+  --radius: 0.75rem;
+  
+  /* Custom Easings (Emil Kowalski) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  
+  /* Press feedback */
+  --press-scale: 0.97;
+  --press-duration: 160ms;
+  
+  /* Stagger */
+  --stagger-delay: 30ms;
 }
 ```
 
-Remember to import { toast } from "sonner". Usage: `toast("Event has been created.")`
+**Contrast Note**: Mint `#34D399` fails AA on white (2.3:1). Use `--mint-600` (`#059669`) for text on light backgrounds. Mint 500 only on dark (navy) backgrounds.
 
-## Dialogs
+---
 
-Always ensure your larger dialogs have a scroll in its content to ensure that its content fits the screen size. Make sure that the content is not cut off from the screen.
+## 🧪 Animations (Emil Kowalski Principles)
 
-Ideally, instead of using a new page, use a Dialog instead. 
+| Interaction | Enter | Exit | Easing | Duration | Notes |
+|-------------|-------|------|--------|----------|-------|
+| Landing hero | `@starting-style` opacity + translateY | N/A | `--ease-out` | 400-600ms | Stagger 50ms |
+| Button press | N/A | N/A | `ease-out` | 160ms | `scale(0.97)` on `:active` |
+| Card hover | `translateY(-4px)` + shadow | `translateY(0)` | `--ease-out` | 200ms | `@media (hover: hover)` |
+| Tab switch | Crossfade | Crossfade | `--ease-in-out` | 200ms | Hardware accelerated |
+| Flashcard flip | `rotateY(180deg)` | `rotateY(0)` | `--ease-in-out` | 500ms | `preserve-3d` |
+| Toast | `translateY(-100%)` | `translateY(0)` | `--ease-out` | 400ms | CSS transitions |
+| Modal/drawer | `scale(0.95)` + opacity | `scale(0.95)` + opacity | `--ease-drawer` | 300ms | Origin-aware |
+| Game match | Pulse scale + color | N/A | `--ease-out` | 300ms | `aria-live` announce |
+| Stagger (grids) | opacity + translateY(8px) | N/A | `--ease-out` | 300ms | 30-50ms delay/item |
 
-# Using the Convex backend
+**Hardware acceleration**: Use `transform: "translateX()"` strings in Framer Motion, not `x`/`y` props.
 
-You will be implementing the convex backend. Follow your knowledge of convex and the documentation to implement the backend.
+**Reduced motion**: All animations respect `prefers-reduced-motion` — keep opacity/color, remove transform motion.
 
-## The Convex Schema
+---
 
-You must correctly follow the convex schema implementation.
+## 🔐 Authentication
 
-The schema is defined in `src/convex/schema.ts`.
+Convex Auth with three flows:
 
-Do not include the `_id` and `_creationTime` fields in your queries (it is included by default for each table).
-Do not index `_creationTime` as it is indexed for you. Never have duplicate indexes.
+1. **Email OTP** — Magic link / code sent to email
+2. **Password** — Traditional email/password
+3. **Anonymous/Guest** — No signup required, data persisted locally
 
+Protected routes use `RequireAuth` wrapper and `useAuth()` hook.
 
-## Convex Actions: Using CRUD operations
+---
 
-When running anything that involves external connections, you must use a convex action with "use node" at the top of the file.
+## 🤖 AI Generation Pipeline
 
-You cannot have queries or mutations in the same file as a "use node" action file. Thus, you must use pre-built queries and mutations in other files.
-
-You can also use the pre-installed internal crud functions for the database:
-
-```ts
-// in convex/users.ts
-import { crud } from "convex-helpers/server/crud";
-import schema from "./schema.ts";
-
-export const { create, read, update, destroy } = crud(schema, "users");
-
-// in some file, in an action:
-const user = await ctx.runQuery(internal.users.read, { id: userId });
-
-await ctx.runMutation(internal.users.update, {
-  id: userId,
-  patch: {
-    status: "inactive",
-  },
-});
+```
+User Notes → createMaterial mutation → generateStudyKit action
+                                        ↓
+                              ┌─────────┴─────────┐
+                              │                   │
+                    AI_API_KEY set?           No API key
+                              │                   │
+                              ▼                   ▼
+                      OpenRouter API         generateMockKit()
+                      (DeepSeek/Llama)          (deterministic)
+                              │                   │
+                              └─────────┬─────────┘
+                                        ▼
+                              parseStudyKit() validation
+                                        │
+                              ┌─────────┴─────────┐
+                              │                   │
+                            Valid               Invalid
+                              │                   │
+                              ▼                   ▼
+                      finishGeneration      failGeneration (retry once)
 ```
 
+**Mock generator** (`generateMockKit`) creates deterministic, realistic study kits based on source text — perfect for demos and development.
 
-## Common Convex Mistakes To Avoid
+---
 
-When using convex, make sure:
-- Document IDs are referenced as `_id` field, not `id`.
-- Document ID types are referenced as `Id<"TableName">`, not `string`.
-- Document object types are referenced as `Doc<"TableName">`.
-- Keep schemaValidation to false in the schema file.
-- You must correctly type your code so that it passes the type checker.
-- You must handle null / undefined cases of your convex queries for both frontend and backend, or else it will throw an error that your data could be null or undefined.
-- Always use the `@/folder` path, with `@/convex/folder/file.ts` syntax for importing convex files.
-- This includes importing generated files like `@/convex/_generated/server`, `@/convex/_generated/api`
-- Remember to import functions like useQuery, useMutation, useAction, etc. from `convex/react`
-- NEVER have return type validators.
+## ♿ Accessibility Checklist
+
+- [x] Skip-to-content link on all pages
+- [x] Visible `:focus-visible` outlines (2px primary ring)
+- [x] ARIA labels on all icon-only buttons
+- [x] `aria-live="polite"` on game announcements, quiz feedback, flashcard flips
+- [x] Semantic heading hierarchy (h1 → h2 → h3)
+- [x] `role="list"` / `role="listitem"` on game grids
+- [x] `aria-pressed`, `aria-selected`, `aria-disabled` on interactive cards
+- [x] Keyboard navigation: Tab, Enter, Space, Arrow keys, Escape
+- [x] `prefers-reduced-motion` respected (transforms disabled, opacity/color kept)
+- [x] WCAG AA contrast: Navy on white (13.6:1), Primary on white (4.5:1), Mint-600 on white (4.5:1)
+- [x] Touch targets ≥ 44×44px
+- [x] `target="_blank" rel="noopener noreferrer"` on external links
+
+---
+
+## 📱 Responsive Breakpoints
+
+| Breakpoint | Width | Layout Changes |
+|------------|-------|----------------|
+| Mobile | < 640px | Single column, hamburger nav, stacked hero, 1-col grids |
+| Tablet | 640–1024px | 2-col grids, visible nav (condensed), side-by-side hero |
+| Desktop | ≥ 1024px | 3-col grids, full nav, sidebar on dashboard, 4-col benefits |
+
+---
+
+## 🧑‍💻 Development
+
+### Commands
+
+```bash
+# Dev server with hot reload
+bun run dev
+
+# Type check
+bun run typecheck
+
+# Lint
+bun run lint
+
+# Build for production
+bun run build
+
+# Preview production build
+bun run preview
+
+# Convex dashboard
+bunx convex dashboard
+
+# Deploy Convex functions
+bunx convex deploy
+```
+
+### Adding a New Page
+
+1. Create component in `src/pages/YourPage.tsx`
+2. Add route in `src/main.tsx`
+3. Use design system classes from `src/index.css`
+4. Wrap in `<main className="min-h-dvh bg-white text-navy-ink">`
+
+### Adding a Study Component
+
+1. Create in `src/components/study/YourComponent.tsx`
+2. Import types from `src/types/study.ts`
+3. Use `useReducedMotion()` for animation gating
+4. Add to `MaterialDetail.tsx` tabs
+
+---
+
+## 🚢 Deployment
+
+### GitHub Pages (Static Preview)
+
+The repo includes `.github/workflows/deploy-pages.yml`. The landing page and library work without Convex.
+
+1. Push to GitHub
+2. Settings → Pages → Source: GitHub Actions
+3. Add `VITE_CONVEX_URL` as repository variable for auth on preview
+
+### Full Deployment (Vercel/Netlify + Convex)
+
+1. Deploy Convex: `bunx convex deploy --prod`
+2. Set production env vars in hosting platform
+3. Deploy frontend (auto-detects Vite)
+
+---
+
+## 📄 License
+
+MIT — feel free to use for learning or commercial projects.
+
+---
+
+## 🙏 Credits
+
+- **Design Engineering**: Emil Kowalski ([animations.dev](https://animations.dev/))
+- **Icons**: Lucide
+- **UI Primitives**: Radix UI
+- **Backend**: Convex
+- **AI**: OpenRouter

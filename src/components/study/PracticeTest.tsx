@@ -119,15 +119,15 @@ export default function PracticeTest({ materialId, quiz, onExit }: Props) {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-[26px] bg-[#17201d] p-8 text-white text-center"
+          className="rounded-[26px] bg-primary p-8 text-primary-foreground text-center"
         >
-          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#d8f36a]">
-            <Award className="h-8 w-8 text-[#17201d]" />
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20">
+            <Award className="h-8 w-8 text-primary-foreground" />
           </span>
           <h2 className="mt-5 text-3xl font-extrabold tracking-[-0.04em]">
             {score} of {quiz.length} correct
           </h2>
-          <p className="mt-1 text-sm font-bold text-[#d8f36a]">{verdict}</p>
+          <p className="mt-1 text-sm font-bold text-white/90">{verdict}</p>
           <Progress
             value={percent}
             className="mb-2 mt-6 h-2 bg-white/10"
@@ -142,16 +142,16 @@ export default function PracticeTest({ materialId, quiz, onExit }: Props) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mt-5 rounded-[22px] border border-[#17201d]/10 bg-white p-6"
+            className="mt-5 rounded-[22px] border border-border bg-white p-6"
           >
-            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[#ef5f47]">
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-primary">
               <Target className="h-4 w-4" /> Review these next
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {reviewTopics.map((topic) => (
                 <span
                   key={topic}
-                  className="rounded-full bg-[#ff967f] px-3 py-1 text-xs font-bold text-[#17201d]"
+                  className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary"
                 >
                   {topic}
                 </span>
@@ -165,9 +165,9 @@ export default function PracticeTest({ materialId, quiz, onExit }: Props) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.18 }}
-            className="mt-5 rounded-[22px] border border-[#17201d]/10 bg-white p-6"
+            className="mt-5 rounded-[22px] border border-border bg-white p-6"
           >
-            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[#87908a]">
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
               <History className="h-4 w-4" /> Your past practice tests
             </p>
             <div className="mt-3 space-y-2">
@@ -178,12 +178,12 @@ export default function PracticeTest({ materialId, quiz, onExit }: Props) {
                 return (
                   <div
                     key={i}
-                    className="flex items-center justify-between rounded-xl bg-[#f7f8f5] px-4 py-2.5 text-sm"
+                    className="flex items-center justify-between rounded-xl bg-muted px-4 py-2.5 text-sm"
                   >
-                    <span className="font-bold text-[#17201d]">
+                    <span className="font-bold text-foreground">
                       {attempt.score}/{attempt.total}
                     </span>
-                    <span className="text-xs font-bold text-[#68736c]">
+                    <span className="text-xs font-bold text-muted-foreground">
                       {new Date(attempt.takenAt).toLocaleDateString(undefined, {
                         month: "short",
                         day: "numeric",
@@ -201,7 +201,7 @@ export default function PracticeTest({ materialId, quiz, onExit }: Props) {
           <button
             type="button"
             onClick={retake}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#d8f36a] px-5 py-3 text-sm font-bold text-[#17201d] shadow-[0_3px_0_#b7d94a] transition-transform hover:-translate-y-0.5"
+            className="pressable hover-lift inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground shadow-[0_3px_0_rgba(37,99,235,0.25)]"
           >
             <RotateCcw className="h-4 w-4" /> Retake
           </button>
@@ -209,7 +209,7 @@ export default function PracticeTest({ materialId, quiz, onExit }: Props) {
             <button
               type="button"
               onClick={onExit}
-              className="inline-flex items-center gap-2 rounded-xl border border-[#17201d]/15 bg-white px-5 py-3 text-sm font-bold text-[#68736c] transition-colors hover:text-[#17201d]"
+              className="pressable inline-flex items-center gap-2 rounded-xl border border-border bg-white px-5 py-3 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
             >
               Back to the guide
             </button>
@@ -225,10 +225,10 @@ export default function PracticeTest({ materialId, quiz, onExit }: Props) {
   return (
     <div className="mx-auto w-full max-w-xl">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <span className="text-xs font-bold uppercase tracking-[0.12em] text-[#87908a]">
+        <span className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
           Question {index + 1} of {quiz.length}
         </span>
-        <span className="text-xs font-bold text-[#ef5f47]">
+        <span className="text-xs font-bold text-primary">
           {quiz[index].topic || "Practice test"}
         </span>
       </div>
@@ -238,9 +238,9 @@ export default function PracticeTest({ materialId, quiz, onExit }: Props) {
         key={index}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-[26px] border border-[#17201d]/10 bg-white p-6 sm:p-8"
+        className="rounded-[26px] border border-border bg-white p-6 sm:p-8"
       >
-        <h3 className="text-xl font-extrabold leading-snug tracking-[-0.02em] text-[#17201d] sm:text-2xl">
+        <h3 className="text-xl font-extrabold leading-snug tracking-[-0.02em] text-foreground sm:text-2xl">
           {question.question}
         </h3>
 
@@ -249,14 +249,14 @@ export default function PracticeTest({ materialId, quiz, onExit }: Props) {
             const isCorrect = displayIndex === correctDisplayIndex;
             const isChosen = displayIndex === selected;
             let style =
-              "border-[#17201d]/12 bg-white text-[#17201d] hover:border-[#17201d]/30";
+              "border-border bg-white text-foreground hover:border-foreground/30";
             if (selected !== null) {
               if (isCorrect) {
-                style = "border-[#a9cf3f] bg-[#d8f36a] text-[#17201d]";
+                style = "border-primary bg-primary text-primary-foreground";
               } else if (isChosen) {
-                style = "border-[#e06a4e] bg-[#ff967f] text-[#17201d]";
+                style = "border-destructive bg-destructive text-destructive-foreground";
               } else {
-                style = "border-[#17201d]/8 bg-white text-[#87908a] opacity-60";
+                style = "border-border bg-white text-muted-foreground opacity-60";
               }
             }
             return (
@@ -265,17 +265,15 @@ export default function PracticeTest({ materialId, quiz, onExit }: Props) {
                 type="button"
                 onClick={() => choose(displayIndex)}
                 disabled={selected !== null}
-                className={`flex w-full items-center gap-3 rounded-xl border-2 px-4 py-3.5 text-left text-sm font-bold transition-all disabled:cursor-default ${
-                  selected === null ? "hover:-translate-y-0.5" : ""
-                } ${style}`}
+                className={`pressable flex w-full items-center gap-3 rounded-xl border-2 px-4 py-3.5 text-left text-sm font-bold transition-[border-color,background-color,color,opacity,transform] duration-[var(--duration-normal)] ease-[var(--ease-out)] disabled:cursor-default ${style}`}
               >
                 <span
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-extrabold ${
                     selected !== null && isCorrect
-                      ? "bg-[#17201d]/10 text-[#17201d]"
+                      ? "bg-primary/10 text-primary"
                       : selected !== null && isChosen
-                        ? "bg-[#17201d]/10 text-[#17201d]"
-                        : "bg-[#f7f8f5] text-[#68736c]"
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {String.fromCharCode(65 + displayIndex)}
@@ -290,9 +288,9 @@ export default function PracticeTest({ materialId, quiz, onExit }: Props) {
           <motion.p
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-5 rounded-xl border border-[#17201d]/8 bg-[#f7f8f5] px-4 py-3 text-sm leading-6 text-[#37433d]"
+            className="mt-5 rounded-xl border border-border bg-muted px-4 py-3 text-sm leading-6 text-foreground"
           >
-            <span className="font-bold text-[#17201d]">Why: </span>
+            <span className="font-bold text-primary">Why: </span>
             {question.explanation}
           </motion.p>
         )}
@@ -306,7 +304,7 @@ export default function PracticeTest({ materialId, quiz, onExit }: Props) {
             <button
               type="button"
               onClick={next}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#17201d] px-5 py-3 text-sm font-bold text-white shadow-[0_3px_0_#0c100e] transition-transform hover:-translate-y-0.5"
+              className="pressable hover-lift inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground shadow-[0_3px_0_rgba(37,99,235,0.25)]"
             >
               {index + 1 < quiz.length ? "Next question" : "See results"}
               <ArrowRight className="h-4 w-4" />
