@@ -5,7 +5,7 @@ import path from "path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  base: "./",
+  base: "/studyspark-ai/",
 
   plugins: [vlyPlugin(), react(), tailwindcss()],
 
