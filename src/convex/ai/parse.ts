@@ -17,27 +17,16 @@ interface ParseSuccess {
 }
 export type ParseResult = ParseFailure | ParseSuccess;
 
-/** Strip ``` fences and any prose around the first {...} object. */
-export function extractJsonObject(text: string): Record<string, unknown> | null {
-  let cleaned = text.trim();
-
-  // Drop a leading ```json / ``` fence if present.
-  cleaned = cleaned.replace(/^```(?:json)?\s*/i, "");
-  if (cleaned.endsWith("```")) {
-    cleaned = cleaned.slice(0, -3).trimEnd();
-  }
-
-  const start = cleaned.indexOf("{");
-  if (start === -1) {
-    return null;
-  }
-
-  // Brace-match from the first { to its closing }.
+/**
+ * Brace-match the substring that starts at `start` (`{`) and ends at its
+ * matching `}`, respecting string/escape state inside the JSON.
+ */
+function extractBalanced(text: string, start: number): string | null {
   let depth = 0;
   let inString = false;
   let escaped = false;
-  for (let i = start; i < cleaned.length; i++) {
-    const char = cleaned[i];
+  for (let i = start; i < text.length; i++) {
+    const char = text[i];
     if (inString) {
       if (escaped) {
         escaped = false;
@@ -57,17 +46,117 @@ export function extractJsonObject(text: string): Record<string, unknown> | null 
     } else if (char === "}") {
       depth--;
       if (depth === 0) {
-        const candidate = cleaned.slice(start, i + 1);
-        try {
-          return JSON.parse(candidate) as Record<string, unknown>;
-        } catch {
-          return null;
+        return text.slice(start, i + 1);
+      }
+    }
+  }
+  return null;
+}
+
+/** Escape literal newlines/tabs that appear inside JSON string values. */
+function escapeInStringControlChars(text: string): string {
+  let out = "";
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (inString) {
+      if (escaped) {
+        out += char;
+        escaped = false;
+      } else if (char === "\\") {
+        out += char;
+        escaped = true;
+      } else if (char === "\n") {
+        out += "\\n";
+      } else if (char === "\r") {
+        out += "\\r";
+      } else if (char === "\t") {
+        out += "\\t";
+      } else if (char === '"') {
+        out += char;
+        inString = false;
+      } else {
+        out += char;
+      }
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+    }
+    out += char;
+  }
+  return out;
+}
+
+/** Produce progressively-repaired candidates for one brace-balanced chunk. */
+function repairJsonText(text: string): string[] {
+  const candidates = [text];
+
+  const noTrailingCommas = text.replace(/,\s*([}\]])/g, "$1");
+  if (noTrailingCommas !== text) {
+    candidates.push(noTrailingCommas);
+  }
+
+  const escapedControls = escapeInStringControlChars(text);
+  if (escapedControls !== text) {
+    candidates.push(escapedControls);
+  }
+
+  const both = escapeInStringControlChars(noTrailingCommas);
+  if (both !== noTrailingCommas && both !== escapedControls) {
+    candidates.push(both);
+  }
+
+  return candidates;
+}
+
+/**
+ * Extract the JSON study-kit object from model output.
+ *
+ * LLMs frequently wrap JSON in fences or prose and make small JSON mistakes
+ * (unescaped newlines in string values, trailing commas). Instead of giving up
+ * on the first `{`, we walk every `{` as a potential start, brace-match each,
+ * and try progressively-repaired candidates — preferring the object that
+ * carries a `guide` key (the study kit always has one).
+ */
+export function extractJsonObject(text: string): Record<string, unknown> | null {
+  let cleaned = text.trim();
+
+  // Drop a leading ```json / ``` fence if present.
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, "");
+  if (cleaned.endsWith("```")) {
+    cleaned = cleaned.slice(0, -3).trimEnd();
+  }
+
+  let fallback: Record<string, unknown> | null = null;
+
+  for (let start = 0; start < cleaned.length; start++) {
+    if (cleaned[start] !== "{") {
+      continue;
+    }
+    const balanced = extractBalanced(cleaned, start);
+    if (balanced === null) {
+      continue;
+    }
+    for (const candidate of repairJsonText(balanced)) {
+      try {
+        const parsed = JSON.parse(candidate) as Record<string, unknown>;
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          if (!fallback) {
+            fallback = parsed;
+          }
+          if (parsed.guide && typeof parsed.guide === "object") {
+            return parsed;
+          }
         }
+      } catch {
+        // Keep trying the remaining repair candidates / brace positions.
       }
     }
   }
 
-  return null;
+  return fallback;
 }
 
 function isNonEmptyString(value: unknown): value is string {
