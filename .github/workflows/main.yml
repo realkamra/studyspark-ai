@@ -36,7 +36,7 @@ jobs:
 
       - name: Build the app
         env:
-          VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
+          VITE_CONVEX_URL: https://spotted-cow-980.convex.cloud
         run: bun run build
 
       - name: Upload GitHub Pages artifact
